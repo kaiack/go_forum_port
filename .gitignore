@@ -1,0 +1,5 @@
+app.db
+.envrc
+cmds.txt
+tmp/*
+bin/*
