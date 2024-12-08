@@ -3,7 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
-	"fmt"
+	"strings"
 )
 
 type User struct {
@@ -40,7 +40,48 @@ func (s *UsersStore) GetUser(ctx context.Context, id int64) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println(u)
+
+	// fmt.Println(u)
 
 	return nil
+}
+
+// https://stackoverflow.com/a/70025947
+func (s *UsersStore) UpdateUser(ctx context.Context, user *User) error {
+
+	query := "UPDATE users SET "
+	var args []interface{}
+	// Empty interface denotes "any type" since every type implements the empty interface,
+	// This slice can hold any type, allowing us to collect all the different types for the
+	// user and pass them as args to the DB call.
+	setClauses := []string{}
+
+	if user.Name != "" {
+		setClauses = append(setClauses, "name = ?")
+		args = append(args, user.Name)
+	}
+	if user.Password != "" {
+		setClauses = append(setClauses, "password = ?")
+		args = append(args, user.Password)
+	}
+	if user.Email != "" {
+		setClauses = append(setClauses, "email = ?")
+		args = append(args, user.Email)
+	}
+	if user.Image.Valid && user.Image.String != "" {
+		setClauses = append(setClauses, "image = ?")
+		args = append(args, user.Image.String)
+	}
+
+	if len(setClauses) == 0 {
+		return nil // Nothing to update, do nothing. Not really an error.
+	}
+
+	query += strings.Join(setClauses, ", ")
+	query += " WHERE id = ?"
+	args = append(args, user.ID)
+
+	_, err := s.db.ExecContext(ctx, query, args...) //.Scan(&u.ID, &u.Name, &u.Password, &u.Email, &u.Admin, &u.Image)
+
+	return err
 }

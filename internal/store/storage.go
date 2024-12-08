@@ -12,6 +12,7 @@ type Storage struct {
 	Users interface {
 		Create(context.Context, *User) error
 		GetUser(context.Context, int64) error
+		UpdateUser(context.Context, *User) error
 	}
 }
 
