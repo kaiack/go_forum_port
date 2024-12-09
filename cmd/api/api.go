@@ -8,11 +8,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/kaiack/goforum/internal/store"
+	"github.com/kaiack/goforum/utils"
 )
 
 type application struct {
-	config config
-	store  store.Storage
+	config     config
+	store      store.Storage
+	tokenMaker utils.JWTMaker
 }
 
 type config struct {
@@ -42,6 +44,10 @@ func (app *application) mount() http.Handler {
 
 	r.Route("/v1", func(r chi.Router) {
 		r.Get("/health", app.healthCheckHandler)
+	})
+
+	r.Route("/auth", func(r chi.Router) {
+		r.Post("/register", app.registerHandler)
 	})
 
 	return r
