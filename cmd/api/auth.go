@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"time"
 
 	"github.com/kaiack/goforum/internal/store"
+	"github.com/kaiack/goforum/utils"
 )
 
 type UserRegisterReq struct {
@@ -16,6 +16,16 @@ type UserRegisterReq struct {
 }
 
 type UserRegisterRes struct {
+	Token  string `json:"token"`
+	UserId int64  `json:"userId"`
+}
+
+type UserLoginReq struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+type userLoginRes struct {
 	Token  string `json:"token"`
 	UserId int64  `json:"userId"`
 }
@@ -35,6 +45,14 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "DB Error", http.StatusInternalServerError)
 	}
 
+	hashed, err := utils.HashPassword(u.Password)
+
+	if err != nil {
+		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+	}
+
+	u.Password = hashed
+
 	newUser := store.User{Name: u.Name, Email: u.Email, Password: u.Password, Admin: !usersEmpty}
 	err = app.store.Users.Create(r.Context(), &newUser)
 	if err != nil {
@@ -42,7 +60,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	accessToken, _, err := app.tokenMaker.CreateToken(newUser.ID, newUser.Email, newUser.Admin, 15*time.Minute)
+	accessToken, _, err := app.tokenMaker.CreateToken(newUser.ID, newUser.Email, newUser.Admin)
 
 	if err != nil {
 		fmt.Println(err)
@@ -58,4 +76,45 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(res)
+}
+
+func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
+	var u UserLoginReq
+
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		fmt.Println(err)
+		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		return
+	}
+
+	fetchedUser, err := app.store.Users.GetUserByEmail(r.Context(), u.Email)
+	if err != nil {
+		http.Error(w, "User doesn't exist", http.StatusBadRequest)
+		return
+	}
+
+	err = utils.CheckPassword(u.Password, fetchedUser.Password)
+
+	if err != nil {
+		http.Error(w, "Incorrect Password", http.StatusUnauthorized)
+		return
+	}
+
+	accessToken, _, err := app.tokenMaker.CreateToken(fetchedUser.ID, fetchedUser.Email, fetchedUser.Admin)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "error creating token", http.StatusInternalServerError)
+		return
+	}
+
+	res := userLoginRes{
+		Token:  accessToken,
+		UserId: fetchedUser.ID,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(res)
+
 }

@@ -2,7 +2,6 @@ package utils
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -15,8 +14,8 @@ func NewJWTMaker(secret string) *JWTMaker {
 	return &JWTMaker{secret}
 }
 
-func (maker *JWTMaker) CreateToken(id int64, email string, isAdmin bool, duration time.Duration) (string, *UserClaims, error) {
-	claims, err := NewUserClaims(id, email, isAdmin, duration)
+func (maker *JWTMaker) CreateToken(id int64, email string, isAdmin bool) (string, *UserClaims, error) {
+	claims, err := NewUserClaims(id, email, isAdmin)
 	if err != nil {
 		return "", nil, err
 	}

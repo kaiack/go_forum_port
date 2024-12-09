@@ -33,10 +33,21 @@ func (s *UsersStore) Create(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (s *UsersStore) GetUser(ctx context.Context, id int64) (*User, error) {
+func (s *UsersStore) GetUserById(ctx context.Context, id int64) (*User, error) {
 	var u User
 	query := `SELECT id, name, password, email, admin, image FROM users where id=$1`
 	err := s.db.QueryRowContext(ctx, query, id).Scan(&u.ID, &u.Name, &u.Password, &u.Email, &u.Admin, &u.Image)
+	if err != nil {
+		return nil, err
+	}
+
+	return &u, nil
+}
+
+func (s *UsersStore) GetUserByEmail(ctx context.Context, email string) (*User, error) {
+	var u User
+	query := `SELECT id, name, password, email, admin, image FROM users where email=?`
+	err := s.db.QueryRowContext(ctx, query, email).Scan(&u.ID, &u.Name, &u.Password, &u.Email, &u.Admin, &u.Image)
 	if err != nil {
 		return nil, err
 	}

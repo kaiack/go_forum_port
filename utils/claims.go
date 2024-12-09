@@ -15,7 +15,7 @@ type UserClaims struct {
 	jwt.RegisteredClaims
 }
 
-func NewUserClaims(id int64, email string, admin bool, duration time.Duration) (*UserClaims, error) {
+func NewUserClaims(id int64, email string, admin bool) (*UserClaims, error) {
 	tokenID, err := uuid.NewRandom()
 	if err != nil {
 		return nil, fmt.Errorf("error during token id generation %w", err)
