@@ -6,8 +6,11 @@ import (
 
 	"github.com/kaiack/goforum/internal/env"
 	"github.com/kaiack/goforum/internal/store"
+	"github.com/kaiack/goforum/utils"
 	_ "github.com/mattn/go-sqlite3"
 )
+
+const minSecretLen = 32
 
 func main() {
 	db, err := sql.Open("sqlite3", "./app.db")
@@ -28,9 +31,16 @@ func main() {
 
 	store := store.NewStorage(db)
 
+	var secret = env.GetString("JWT_SECRET", "pneumonoultramicroscopicsilicovolcanoconiosis")
+
+	if len(secret) < minSecretLen {
+		log.Fatalf("Need secret to be 32 chars in len or more")
+	}
+
 	app := &application{
-		config: cfg,
-		store:  store,
+		config:     cfg,
+		store:      store,
+		tokenMaker: *utils.NewJWTMaker(secret),
 	}
 
 	mux := app.mount()

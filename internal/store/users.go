@@ -22,10 +22,10 @@ type UsersStore struct {
 
 func (s *UsersStore) Create(ctx context.Context, user *User) error {
 	query := `
-		INSERT INTO users(name, password, email) VALUES($1, $2, $3) RETURNING id
+		INSERT INTO users(name, password, email, admin) VALUES(?, ?, ?, ?) RETURNING id
 	`
 
-	err := s.db.QueryRowContext(ctx, query, user.Name, user.Password, user.Email).Scan(&user.ID)
+	err := s.db.QueryRowContext(ctx, query, user.Name, user.Password, user.Email, user.Admin).Scan(&user.ID)
 
 	if err != nil {
 		return err
@@ -33,17 +33,15 @@ func (s *UsersStore) Create(ctx context.Context, user *User) error {
 	return nil
 }
 
-func (s *UsersStore) GetUser(ctx context.Context, id int64) error {
+func (s *UsersStore) GetUser(ctx context.Context, id int64) (*User, error) {
 	var u User
 	query := `SELECT id, name, password, email, admin, image FROM users where id=$1`
 	err := s.db.QueryRowContext(ctx, query, id).Scan(&u.ID, &u.Name, &u.Password, &u.Email, &u.Admin, &u.Image)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	// fmt.Println(u)
-
-	return nil
+	return &u, nil
 }
 
 // https://stackoverflow.com/a/70025947
@@ -84,4 +82,12 @@ func (s *UsersStore) UpdateUser(ctx context.Context, user *User) error {
 	_, err := s.db.ExecContext(ctx, query, args...) //.Scan(&u.ID, &u.Name, &u.Password, &u.Email, &u.Admin, &u.Image)
 
 	return err
+}
+
+func (s *UsersStore) IsUsersEmpty(ctx context.Context) (bool, error) {
+	var count int
+	query := `SELECT COUNT(*) FROM users`
+	err := s.db.QueryRowContext(ctx, query).Scan(&count)
+
+	return count == 0, err
 }

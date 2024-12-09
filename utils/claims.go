@@ -26,10 +26,9 @@ func NewUserClaims(id int64, email string, admin bool, duration time.Duration) (
 		ID:    id,
 		Admin: admin,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ID:        tokenID.String(),
-			Subject:   email,
-			IssuedAt:  jwt.NewNumericDate(time.Now()),
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(duration)),
+			ID:       tokenID.String(),
+			Subject:  email,
+			IssuedAt: jwt.NewNumericDate(time.Now()),
 		},
 	}, nil
 }
