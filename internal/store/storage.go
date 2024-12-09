@@ -16,6 +16,9 @@ type Storage struct {
 		UpdateUser(context.Context, *User) error
 		IsUsersEmpty(context.Context) (bool, error)
 	}
+	Comments interface {
+		Create(context.Context, *Comment)
+	}
 }
 
 func NewStorage(db *sql.DB) Storage {

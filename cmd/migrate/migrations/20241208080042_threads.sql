@@ -7,7 +7,8 @@ CREATE TABLE threads (
     isPublic BOOLEAN NOT NULL,
     creatorId INTEGER NOT NULL,
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    lock BOOLEAN DEFAULT FALSE NOT NULL
+    lock BOOLEAN DEFAULT FALSE NOT NULL,
+    FOREIGN KEY (creatorId) REFERENCES users(id) ON DELETE CASCADE
 );
 
 INSERT INTO threads (content, title, isPublic, creatorId, createdAt, lock) 
