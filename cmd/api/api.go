@@ -57,6 +57,11 @@ func (app *application) mount() http.Handler {
 		r.With(GetAdminMiddleWareFunc(&app.tokenMaker, &app.store)).Put("/admin", app.updateUserAdmin)
 	})
 
+	r.Route("/thread", func(r chi.Router) {
+		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Post("/", app.MakeThreadHandler)
+		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/", app.GetThreadHandler)
+	})
+
 	return r
 }
 

@@ -8,6 +8,7 @@ import (
 type Storage struct {
 	Threads interface {
 		Create(context.Context, *Thread) error
+		GetThread(ctx context.Context, id int64) (*Thread, error)
 	}
 	Users interface {
 		Create(context.Context, *User) error
