@@ -53,14 +53,17 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 
 	u.Password = hashed
 
-	newUser := store.User{Name: u.Name, Email: u.Email, Password: u.Password, Admin: !usersEmpty}
+	// Empty users ->this is first user. Set them to admin
+	setAdmin := !usersEmpty
+
+	newUser := store.User{Name: u.Name, Email: u.Email, Password: u.Password, Admin: &setAdmin}
 	err = app.store.Users.Create(r.Context(), &newUser)
 	if err != nil {
 		http.Error(w, "error creating new User", http.StatusInternalServerError)
 		return
 	}
 
-	accessToken, _, err := app.tokenMaker.CreateToken(newUser.ID, newUser.Email, newUser.Admin)
+	accessToken, _, err := app.tokenMaker.CreateToken(newUser.ID, newUser.Email, *newUser.Admin)
 
 	if err != nil {
 		fmt.Println(err)
@@ -100,7 +103,7 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	accessToken, _, err := app.tokenMaker.CreateToken(fetchedUser.ID, fetchedUser.Email, fetchedUser.Admin)
+	accessToken, _, err := app.tokenMaker.CreateToken(fetchedUser.ID, fetchedUser.Email, *fetchedUser.Admin)
 
 	if err != nil {
 		fmt.Println(err)

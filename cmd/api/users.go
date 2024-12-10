@@ -16,7 +16,10 @@ type UserUpdateReq struct {
 	Image    string `json:"image"`
 }
 
-type UserUpdateRes struct{}
+type UserAdminUpdateReq struct {
+	Id     int64 `json:"userId"`
+	TurnOn bool  `json:"turnon"`
+}
 
 func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 
@@ -28,9 +31,9 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	fmt.Println(u)
+	// fmt.Println(u)
 	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
-	fmt.Println(claims.Email, claims.Id)
+	// fmt.Println(claims.Email, claims.Id)
 
 	var updatedUser = store.User{ID: claims.Id, Email: u.Email, Name: u.Name, Password: u.Password, Image: u.Image}
 
@@ -45,4 +48,24 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusOK)
 }
 
-// "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6MTEsImVtYWlsIjoia2FpQGV4YW1wbGUuY29tIiwiYWRtaW4iOnRydWUsInN1YiI6ImthaUBleGFtcGxlLmNvbSIsImlhdCI6MTczMzc0MjI2MiwianRpIjoiYjI0MGMwMzctYjQ1My00YTE5LWExMmMtYjc5NTI3OTQ2ZGI3In0.Zm82-tJrDegtPL7YByWX3aJg843MYv5YSsoGBTq11Zs"
+func (app *application) updateUserAdmin(w http.ResponseWriter, r *http.Request) {
+	var u UserAdminUpdateReq
+
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		fmt.Println(err)
+		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		return
+	}
+
+	var updatedUser = store.User{ID: u.Id, Admin: &u.TurnOn}
+
+	err := app.store.Users.UpdateUser(r.Context(), &updatedUser)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "error updating user", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}

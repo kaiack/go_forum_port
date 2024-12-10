@@ -53,6 +53,7 @@ func (app *application) mount() http.Handler {
 
 	r.Route("/user", func(r chi.Router) {
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Put("/", app.updateUserHandler)
+		r.With(GetAdminMiddleWareFunc(&app.tokenMaker, &app.store)).Put("/admin", app.updateUserAdmin)
 	})
 
 	return r

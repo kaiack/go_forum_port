@@ -30,7 +30,7 @@ func GetAuthMiddleWareFunc(tokenMaker *utils.JWTMaker) func(http.Handler) http.H
 	}
 }
 
-func GetAdminMiddleWareFunc(tokenMaker *utils.JWTMaker, userStorage *store.UsersStore) func(http.Handler) http.Handler {
+func GetAdminMiddleWareFunc(tokenMaker *utils.JWTMaker, storage *store.Storage) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			// Read authorization header
@@ -41,16 +41,17 @@ func GetAdminMiddleWareFunc(tokenMaker *utils.JWTMaker, userStorage *store.Users
 				return
 			}
 
-			isAdmin, err := userStorage.IsUserAdmin(r.Context(), claims.Id)
+			isAdmin, err := storage.Users.IsUserAdmin(r.Context(), claims.Id)
 
 			if err != nil {
 				http.Error(w, fmt.Sprintf("user not found??, big error call someone %v", err), http.StatusInternalServerError)
 			}
 
 			if !isAdmin {
-				http.Error(w, "USer is not admin", http.StatusUnauthorized)
+				http.Error(w, "user is not admin", http.StatusUnauthorized)
 				return
 			}
+			fmt.Println("HERE!")
 			// pass the payload/claims down the context
 			ctx := context.WithValue(r.Context(), authKey{}, claims)
 			next.ServeHTTP(w, r.WithContext(ctx))

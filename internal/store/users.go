@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"strings"
 
 	"github.com/kaiack/goforum/utils"
@@ -14,7 +15,7 @@ type User struct {
 	Password  string `json:"password"`
 	Email     string `json:"email"`
 	Image     string `json:"image"`
-	Admin     bool   `json:"admin"`
+	Admin     *bool  `json:"admin"`
 	CreatedAt string `json:"createdAt"`
 }
 
@@ -88,6 +89,11 @@ func (s *UsersStore) UpdateUser(ctx context.Context, user *User) error {
 		setClauses = append(setClauses, "image = ?")
 		args = append(args, user.Image)
 	}
+	fmt.Println(*user.Admin)
+	if user.Admin != nil {
+		setClauses = append(setClauses, "admin = ?")
+		args = append(args, *user.Admin)
+	}
 
 	if len(setClauses) == 0 {
 		return nil // Nothing to update, do nothing. Not really an error.
@@ -96,7 +102,8 @@ func (s *UsersStore) UpdateUser(ctx context.Context, user *User) error {
 	query += strings.Join(setClauses, ", ")
 	query += " WHERE id = ?"
 	args = append(args, user.ID)
-
+	fmt.Println(query)
+	fmt.Println(args)
 	_, err := s.db.ExecContext(ctx, query, args...) //.Scan(&u.ID, &u.Name, &u.Password, &u.Email, &u.Admin, &u.Image)
 
 	return err
