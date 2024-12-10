@@ -22,7 +22,7 @@ type ThreadsStore struct {
 func (s *ThreadsStore) Create(ctx context.Context, thread *Thread) error {
 	query := `
 		INSERT INTO threads (content, title, isPublic, creatorId)
-		VALUES ($1, $2, $3, $4) RETURNING id
+		VALUES (?, ?, ?, ?) RETURNING id
 	`
 
 	err := s.db.QueryRowContext(ctx, query, thread.Content, thread.Title, thread.IsPublic, thread.CreatorID).Scan(

@@ -15,6 +15,7 @@ type Storage struct {
 		GetUserByEmail(context.Context, string) (*User, error)
 		UpdateUser(context.Context, *User) error
 		IsUsersEmpty(context.Context) (bool, error)
+		IsUserAdmin(context.Context, int64) (bool, error)
 	}
 	Comments interface {
 		Create(context.Context, *Comment)

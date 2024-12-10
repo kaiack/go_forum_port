@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/kaiack/goforum/internal/store"
 	"github.com/kaiack/goforum/utils"
 )
 
@@ -30,14 +31,17 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 	fmt.Println(u)
 	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
 	fmt.Println(claims.Email, claims.Id)
-	// newUser := store.User{Name: "Kai", Email: "kai@example.com", Password: "goodpassword"}
-	// err = app.store.Users.Create(r.Context(), &newUser)
-	// if err != nil {
-	// 	fmt.Println(err)†
-	// }
-	// fmt.Println(newThread.ID)
 
-	// w.Write([]byte("All good"))
+	var updatedUser = store.User{ID: claims.Id, Email: u.Email, Name: u.Name, Password: u.Password, Image: u.Image}
+
+	err := app.store.Users.UpdateUser(r.Context(), &updatedUser)
+
+	if err != nil {
+		fmt.Println(err)
+		http.Error(w, "error updating user", http.StatusInternalServerError)
+		return
+	}
+
 	w.WriteHeader(http.StatusOK)
 }
 

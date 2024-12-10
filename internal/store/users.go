@@ -4,16 +4,18 @@ import (
 	"context"
 	"database/sql"
 	"strings"
+
+	"github.com/kaiack/goforum/utils"
 )
 
 type User struct {
-	ID        int64          `json:"id"`
-	Name      string         `json:"name"`
-	Password  string         `json:"password"`
-	Email     string         `json:"email"`
-	Image     sql.NullString `json:"image"`
-	Admin     bool           `json:"admin"`
-	CreatedAt string         `json:"createdAt"`
+	ID        int64  `json:"id"`
+	Name      string `json:"name"`
+	Password  string `json:"password"`
+	Email     string `json:"email"`
+	Image     string `json:"image"`
+	Admin     bool   `json:"admin"`
+	CreatedAt string `json:"createdAt"`
 }
 
 type UsersStore struct {
@@ -70,16 +72,21 @@ func (s *UsersStore) UpdateUser(ctx context.Context, user *User) error {
 		args = append(args, user.Name)
 	}
 	if user.Password != "" {
+		// Hash password when updating it.
+		hashed, err := utils.HashPassword(user.Password)
+		if err != nil {
+			return err
+		}
 		setClauses = append(setClauses, "password = ?")
-		args = append(args, user.Password)
+		args = append(args, hashed)
 	}
 	if user.Email != "" {
 		setClauses = append(setClauses, "email = ?")
 		args = append(args, user.Email)
 	}
-	if user.Image.Valid && user.Image.String != "" {
+	if user.Image != "" {
 		setClauses = append(setClauses, "image = ?")
-		args = append(args, user.Image.String)
+		args = append(args, user.Image)
 	}
 
 	if len(setClauses) == 0 {
@@ -101,4 +108,12 @@ func (s *UsersStore) IsUsersEmpty(ctx context.Context) (bool, error) {
 	err := s.db.QueryRowContext(ctx, query).Scan(&count)
 
 	return count == 0, err
+}
+
+func (s *UsersStore) IsUserAdmin(ctx context.Context, id int64) (bool, error) {
+	var isAdmin bool
+	query := `SELECT admin FROM users WHERE id=?`
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&isAdmin)
+
+	return isAdmin, err
 }
