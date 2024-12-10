@@ -52,6 +52,8 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 		return nil, err
 	}
 
+	// -------------------------------------------------------------------------------------------------------
+
 	// To get likes, invert this for comments...
 	query = `SELECT user_id FROM likes WHERE thread_id = ? AND comment_id IS NULL`
 
@@ -74,6 +76,8 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 
 	t.Likes = likesMap
 
+	// -------------------------------------------------------------------------------------------------------
+
 	query = `SELECT userId FROM watching WHERE threadId = ?`
 	watchingRows, err := s.db.QueryContext(ctx, query, id)
 	if err != nil {
@@ -93,6 +97,6 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 
 	t.Watchees = watchingMap
 
-	fmt.Println(t.Likes, t.Watchees)
+	// fmt.Println(t.Likes, t.Watchees)
 	return &t, nil
 }
