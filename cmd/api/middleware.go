@@ -51,7 +51,7 @@ func GetAdminMiddleWareFunc(tokenMaker *utils.JWTMaker, storage *store.Storage) 
 				http.Error(w, "user is not admin", http.StatusUnauthorized)
 				return
 			}
-			fmt.Println("HERE!")
+
 			// pass the payload/claims down the context
 			ctx := context.WithValue(r.Context(), authKey{}, claims)
 			next.ServeHTTP(w, r.WithContext(ctx))

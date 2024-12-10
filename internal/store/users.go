@@ -28,7 +28,7 @@ func (s *UsersStore) Create(ctx context.Context, user *User) error {
 		INSERT INTO users(name, password, email, admin) VALUES(?, ?, ?, ?) RETURNING id
 	`
 
-	err := s.db.QueryRowContext(ctx, query, user.Name, user.Password, user.Email, user.Admin).Scan(&user.ID)
+	err := s.db.QueryRowContext(ctx, query, user.Name, user.Password, user.Email, *user.Admin).Scan(&user.ID)
 
 	if err != nil {
 		return err
@@ -38,8 +38,8 @@ func (s *UsersStore) Create(ctx context.Context, user *User) error {
 
 func (s *UsersStore) GetUserById(ctx context.Context, id int64) (*User, error) {
 	var u User
-	query := `SELECT id, name, password, email, admin, image FROM users where id=$1`
-	err := s.db.QueryRowContext(ctx, query, id).Scan(&u.ID, &u.Name, &u.Password, &u.Email, &u.Admin, &u.Image)
+	query := `SELECT id, name, email, admin, image FROM users where id=$1`
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&u.ID, &u.Name, &u.Email, &u.Admin, &u.Image)
 	if err != nil {
 		return nil, err
 	}

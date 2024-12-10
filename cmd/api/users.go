@@ -21,6 +21,19 @@ type UserAdminUpdateReq struct {
 	TurnOn bool  `json:"turnon"`
 }
 
+type UserGetReq struct {
+	Id int64 `json:"userId"`
+}
+
+type UserGetRes struct {
+	Id       int64  `json:"id"`
+	Email    string `json:"email"`
+	Name     string `json:"name"`
+	Password string `json:"password"`
+	Image    string `json:"image"`
+	Admin    bool   `json:"admin"`
+}
+
 func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	var u UserUpdateReq
@@ -68,4 +81,34 @@ func (app *application) updateUserAdmin(w http.ResponseWriter, r *http.Request) 
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
+	var u UserGetReq
+
+	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+		fmt.Println(err)
+		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		return
+	}
+
+	userInfo, err := app.store.Users.GetUserById(r.Context(), u.Id)
+
+	if err != nil {
+		http.Error(w, "error fetching user", http.StatusInternalServerError)
+		return
+	}
+
+	var res UserGetRes = UserGetRes{
+		Id:       userInfo.ID,
+		Email:    userInfo.Email,
+		Password: "", // Password returned from getUserById should also be empty, but just to be explicit here...
+		Admin:    *userInfo.Admin,
+		Image:    userInfo.Image,
+		Name:     userInfo.Name,
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(res)
 }
