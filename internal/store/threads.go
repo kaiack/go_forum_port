@@ -3,6 +3,8 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
+	"strconv"
 )
 
 type Thread struct {
@@ -46,10 +48,51 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 	query := `SELECT content, title, creatorId, isPublic, createdAt, lock FROM threads WHERE id = ?`
 
 	err := s.db.QueryRowContext(ctx, query, id).Scan(&t.Content, &t.Title, &t.CreatorID, &t.IsPublic, &t.CreatedAt, &t.Lock)
-
 	if err != nil {
 		return nil, err
 	}
 
+	// To get likes, invert this for comments...
+	query = `SELECT user_id FROM likes WHERE thread_id = ? AND comment_id IS NULL`
+
+	likesRows, err := s.db.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+	defer likesRows.Close() // defer runs after this function returns.
+
+	likesMap := make(map[string]bool)
+
+	for likesRows.Next() {
+		var userID int64
+		if err := likesRows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		fmt.Println(userID)
+		likesMap[strconv.FormatInt(userID, 10)] = true // Mark the user as having liked the thread
+	}
+
+	t.Likes = likesMap
+
+	query = `SELECT userId FROM watching WHERE threadId = ?`
+	watchingRows, err := s.db.QueryContext(ctx, query, id)
+	if err != nil {
+		return nil, err
+	}
+
+	defer watchingRows.Close() // defer runs after this function returns.
+	watchingMap := make(map[string]bool)
+
+	for watchingRows.Next() {
+		var userID int64
+		if err := watchingRows.Scan(&userID); err != nil {
+			return nil, err
+		}
+		watchingMap[strconv.FormatInt(userID, 10)] = true // Mark the user as having liked the thread
+	}
+
+	t.Watchees = watchingMap
+
+	fmt.Println(t.Likes, t.Watchees)
 	return &t, nil
 }

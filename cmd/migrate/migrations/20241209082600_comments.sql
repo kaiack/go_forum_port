@@ -1,10 +1,10 @@
 -- +goose Up
 -- +goose StatementBegin
 CREATE TABLE comments (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    creator_id INT NOT NULL,
-    thread_id INT NOT NULL,
-    parent_comment_id INT DEFAULT NULL, -- for nested comments
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    creator_id INTEGER NOT NULL,
+    thread_id INTEGER NOT NULL,
+    parent_comment_id INTEGER DEFAULT NULL, -- for nested comments
     content TEXT NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (creator_id) REFERENCES users(id) ON DELETE CASCADE,
