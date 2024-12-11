@@ -25,6 +25,12 @@ type GetThreadReq struct {
 
 type GetThreadRes = store.Thread
 
+type GetThreadsReq struct {
+	Start int64 `json:"count"`
+}
+
+type GetThreadsRes []int64
+
 func (app *application) MakeThreadHandler(w http.ResponseWriter, r *http.Request) {
 	var t MakeThreadReq
 
@@ -90,4 +96,36 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&thread)
+}
+
+func (app *application) GetThreadsHandler(w http.ResponseWriter, r *http.Request) {
+	var t GetThreadsReq
+
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+		fmt.Println(err)
+		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		return
+	}
+
+	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
+	userId := claims.Id
+
+	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
+	if err != nil {
+		http.Error(w, "Error fetching user details", http.StatusInternalServerError)
+		return
+	}
+
+	threads, err := app.store.Threads.GetThreads(r.Context(), t.Start, userId, isAdmin)
+
+	if err != nil {
+		http.Error(w, fmt.Sprintf("Error fetching threads: %s", err), http.StatusInternalServerError)
+		return
+	}
+
+	res := GetThreadsRes(threads)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(&res)
 }

@@ -42,7 +42,7 @@ func (app *application) mount() http.Handler {
 	// processing should be stopped.
 	r.Use(middleware.Timeout(60 * time.Second))
 
-	r.Route("/v1", func(r chi.Router) {
+	r.Route("/", func(r chi.Router) {
 		r.Get("/health", app.healthCheckHandler)
 	})
 
@@ -61,6 +61,8 @@ func (app *application) mount() http.Handler {
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Post("/", app.MakeThreadHandler)
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/", app.GetThreadHandler)
 	})
+
+	r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/threads", app.GetThreadsHandler)
 
 	return r
 }

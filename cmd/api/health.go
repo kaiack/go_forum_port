@@ -3,8 +3,6 @@ package main
 import (
 	"fmt"
 	"net/http"
-
-	"github.com/kaiack/goforum/internal/store"
 )
 
 func (app *application) healthCheckHandler(w http.ResponseWriter, r *http.Request) {
@@ -28,12 +26,20 @@ func (app *application) healthCheckHandler(w http.ResponseWriter, r *http.Reques
 	// 	fmt.Println(err)
 	// }
 	// fmt.Println("yay")
-	updatedUser := store.User{ID: 10, Name: "Kai", Email: "Kai@example.com", Password: "helloworld"}
-	err := app.store.Users.UpdateUser(r.Context(), &updatedUser)
+	// updatedUser := store.User{ID: 10, Name: "Kai", Email: "Kai@example.com", Password: "helloworld"}
+	// err := app.store.Users.UpdateUser(r.Context(), &updatedUser)
+	// if err != nil {
+	// 	fmt.Println(err)
+	// }
+	// fmt.Println("yay")
+	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), 1)
 	if err != nil {
+		fmt.Println("uh oh")
 		fmt.Println(err)
+		return
 	}
-	fmt.Println("yay")
+
+	app.store.Threads.GetThreads(r.Context(), 0, 1, isAdmin)
 
 	w.Write([]byte("All good"))
 }

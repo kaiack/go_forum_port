@@ -97,6 +97,43 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 
 	t.Watchees = watchingMap
 
-	// fmt.Println(t.Likes, t.Watchees)
 	return &t, nil
+}
+
+func (s *ThreadsStore) GetThreads(ctx context.Context, start int64, userId int64, isAdmin bool) ([]int64, error) {
+	// Check If userId is admin
+	// If so, get the nth-n+5th posts
+	// Else get the n-n+5th posts where the post is public or the post is owned by userId
+
+	var threadIds *sql.Rows
+	if isAdmin {
+		query := `SELECT id FROM threads ORDER BY id LIMIT 5 OFFSET ?;`
+		threadIdsRows, err := s.db.QueryContext(ctx, query, start)
+		if err != nil {
+			return nil, err
+		}
+		threadIds = threadIdsRows
+	} else {
+		query := `SELECT id FROM threads WHERE (creatorId = ? OR isPublic = TRUE) ORDER BY id LIMIT 5 OFFSET ?;`
+		threadIdsRows, err := s.db.QueryContext(ctx, query, userId, start)
+		if err != nil {
+			return nil, err
+		}
+		threadIds = threadIdsRows
+	}
+
+	defer threadIds.Close() // defer runs after this function returns.
+
+	var idsList []int64
+
+	for threadIds.Next() {
+		var threadId int64
+		if err := threadIds.Scan(&threadId); err != nil {
+			return nil, err
+		}
+		fmt.Println(threadId)
+		idsList = append(idsList, threadId)
+	}
+
+	return idsList, nil
 }
