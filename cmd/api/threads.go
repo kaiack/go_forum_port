@@ -53,6 +53,7 @@ func (app *application) MakeThreadHandler(w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 		utils.HandleValidationError(err, w)
+		return
 	}
 
 	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
@@ -95,6 +96,7 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 	err := app.validator.Struct(t)
 	if err != nil {
 		utils.HandleValidationError(err, w)
+		return
 	}
 
 	thread, err := app.store.Threads.GetThread(r.Context(), t.Id)
