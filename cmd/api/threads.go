@@ -229,3 +229,6 @@ func (app *application) EditThreadHandler(w http.ResponseWriter, r *http.Request
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(make(map[string]string)) // send empty object?
 }
+
+// TODO:
+// Add validation for route bodies where required...
