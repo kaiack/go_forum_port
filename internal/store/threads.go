@@ -5,16 +5,17 @@ import (
 	"database/sql"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 type Thread struct {
 	ID        int64           `json:"id"`
 	Content   string          `json:"content"`
 	Title     string          `json:"title"`
-	IsPublic  bool            `json:"isPublic"`
+	IsPublic  *bool           `json:"isPublic"`
 	CreatorID int64           `json:"creatorId"`
 	CreatedAt string          `json:"createdAt"`
-	Lock      bool            `json:"lock"`
+	Lock      *bool           `json:"lock"`
 	Likes     map[string]bool `json:"likes"`
 	Watchees  map[string]bool `json:"watchees"`
 }
@@ -23,13 +24,13 @@ type ThreadsStore struct {
 	db *sql.DB
 }
 
-func (s *ThreadsStore) Create(ctx context.Context, thread *Thread) error {
+func (s *ThreadsStore) CreateThread(ctx context.Context, thread *Thread) error {
 	query := `
 		INSERT INTO threads (content, title, isPublic, creatorId)
 		VALUES (?, ?, ?, ?) RETURNING id
 	`
 
-	err := s.db.QueryRowContext(ctx, query, thread.Content, thread.Title, thread.IsPublic, thread.CreatorID).Scan(
+	err := s.db.QueryRowContext(ctx, query, thread.Content, thread.Title, *thread.IsPublic, thread.CreatorID).Scan(
 		&thread.ID,
 	)
 
@@ -136,4 +137,84 @@ func (s *ThreadsStore) GetThreads(ctx context.Context, start int64, userId int64
 	}
 
 	return idsList, nil
+}
+
+func (s *ThreadsStore) UpdateThread(ctx context.Context, thread *Thread) error {
+	query := "UPDATE threads SET "
+	var args []interface{}
+	// Empty interface denotes "any type" since every type implements the empty interface,
+	// This slice can hold any type, allowing us to collect all the different types for the
+	// user and pass them as args to the DB call.
+	setClauses := []string{}
+
+	if thread.Title != "" {
+		setClauses = append(setClauses, "title = ?")
+		args = append(args, thread.Title)
+	}
+	if thread.Content != "" {
+		setClauses = append(setClauses, "content = ?")
+		args = append(args, thread.Content)
+	}
+	if thread.IsPublic != nil {
+		setClauses = append(setClauses, "isPublic = ?")
+		args = append(args, *thread.IsPublic)
+	}
+	if thread.Lock != nil {
+		setClauses = append(setClauses, "lock = ?")
+		args = append(args, *thread.Lock)
+	}
+
+	if len(setClauses) == 0 {
+		return nil // Nothing to update, do nothing. Not really an error.
+	}
+
+	query += strings.Join(setClauses, ", ")
+	query += " WHERE id = ?"
+	args = append(args, thread.ID)
+	_, err := s.db.ExecContext(ctx, query, args...)
+	fmt.Println(err)
+	return err
+}
+
+func (s *ThreadsStore) ValidateThreadId(ctx context.Context, id int64) error {
+	// Query to check if the given thread ID exists
+	query := "SELECT COUNT(*) FROM threads WHERE id = ?"
+
+	var count int
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&count)
+	if err != nil {
+		return fmt.Errorf("failed to execute query: %v", err)
+	}
+
+	// If count is greater than 0, the thread exists
+	if count == 0 {
+		return fmt.Errorf("User not found: %v", err)
+	}
+	return nil
+}
+
+func (s *ThreadsStore) IsThreadLocked(ctx context.Context, id int64) (bool, error) {
+	// Query to check if the given thread is locked
+	query := "SELECT lock FROM threads WHERE id = ?"
+
+	var lock bool
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&lock)
+	if err != nil {
+		return false, fmt.Errorf("failed to execute query: %v", err)
+	}
+
+	return lock, nil
+}
+
+func (s *ThreadsStore) IsThreadOwner(ctx context.Context, userId int64, threadId int64) (bool, error) {
+	// Query to check if the given thread is locked
+	query := "SELECT creatorId FROM threads WHERE id = ?"
+
+	var creatorId int64
+	err := s.db.QueryRowContext(ctx, query, threadId).Scan(&creatorId)
+	if err != nil {
+		return false, fmt.Errorf("failed to execute query: %v", err)
+	}
+
+	return userId == creatorId, nil
 }

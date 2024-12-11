@@ -7,6 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-playground/validator/v10"
 	"github.com/kaiack/goforum/internal/store"
 	"github.com/kaiack/goforum/utils"
 )
@@ -15,6 +16,7 @@ type application struct {
 	config     config
 	store      store.Storage
 	tokenMaker utils.JWTMaker
+	validator  *validator.Validate
 }
 
 type config struct {
@@ -60,6 +62,7 @@ func (app *application) mount() http.Handler {
 	r.Route("/thread", func(r chi.Router) {
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Post("/", app.MakeThreadHandler)
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/", app.GetThreadHandler)
+		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Put("/", app.EditThreadHandler)
 	})
 
 	r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/threads", app.GetThreadsHandler)

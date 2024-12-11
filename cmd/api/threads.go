@@ -10,9 +10,9 @@ import (
 )
 
 type MakeThreadReq struct {
-	Title    string `json:"title"`
+	Title    string `json:"title" validate:"required"`
 	Content  string `json:"content"`
-	IsPublic bool   `json:"isPublic"`
+	IsPublic bool   `json:"isPublic" validate:"required"`
 }
 
 type MakeThreadRes struct {
@@ -20,17 +20,26 @@ type MakeThreadRes struct {
 }
 
 type GetThreadReq struct {
-	Id int64 `json:"id"`
+	Id int64 `json:"id" validate:"required"`
 }
 
 type GetThreadRes = store.Thread
 
 type GetThreadsReq struct {
-	Start int64 `json:"count"`
+	Start int64 `json:"count" validate:"required"`
 }
 
 type GetThreadsRes []int64
 
+type EditThreadReq struct {
+	Id       *int64 `json:"id" validate:"required,gte=1"`
+	Title    string `json:"title"`
+	IsPublic *bool  `json:"isPublic"`
+	Content  string `json:"content"`
+	Lock     *bool  `json:"lock"`
+}
+
+// id, title, isPublic, content, lock
 func (app *application) MakeThreadHandler(w http.ResponseWriter, r *http.Request) {
 	var t MakeThreadReq
 
@@ -40,18 +49,24 @@ func (app *application) MakeThreadHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	err := app.validator.Struct(t)
+
+	if err != nil {
+		utils.HandleValidationError(err, w)
+	}
+
 	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
 	userId := claims.Id
-
+	lock := false
 	newThread := store.Thread{
 		Title:     t.Title,
 		Content:   t.Content,
-		IsPublic:  t.IsPublic,
+		IsPublic:  &t.IsPublic,
 		CreatorID: userId,
-		Lock:      false,
+		Lock:      &lock,
 	}
 
-	err := app.store.Threads.Create(r.Context(), &newThread)
+	err = app.store.Threads.CreateThread(r.Context(), &newThread)
 
 	if err != nil {
 		// Will this cover the case in which creatorId is not present in the DB? -> Should be enforced by foreign key.1
@@ -75,6 +90,11 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 		fmt.Println(err)
 		http.Error(w, "Request body invalid", http.StatusBadRequest)
 		return
+	}
+
+	err := app.validator.Struct(t)
+	if err != nil {
+		utils.HandleValidationError(err, w)
 	}
 
 	thread, err := app.store.Threads.GetThread(r.Context(), t.Id)
@@ -107,6 +127,11 @@ func (app *application) GetThreadsHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	err := app.validator.Struct(t)
+	if err != nil {
+		utils.HandleValidationError(err, w)
+	}
+
 	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
 	userId := claims.Id
 
@@ -128,4 +153,79 @@ func (app *application) GetThreadsHandler(w http.ResponseWriter, r *http.Request
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(&res)
+}
+
+func (app *application) EditThreadHandler(w http.ResponseWriter, r *http.Request) {
+	var t EditThreadReq
+
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+		fmt.Println(err)
+		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		return
+	}
+
+	err := app.validator.Struct(t)
+
+	if err != nil {
+		utils.HandleValidationError(err, w)
+		return
+	}
+
+	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
+	userId := claims.Id
+
+	newThread := store.Thread{
+		ID:       *t.Id,
+		Content:  t.Content,
+		Title:    t.Title,
+		IsPublic: t.IsPublic,
+		Lock:     t.Lock,
+	}
+	// await assertValidThread(id);
+	err = app.store.Threads.ValidateThreadId(r.Context(), *t.Id)
+	if err != nil {
+		http.Error(w, "thread id not valid", http.StatusInternalServerError)
+		return
+	}
+	// await assertUnlockedThread(id);
+	locked, err := app.store.Threads.IsThreadLocked(r.Context(), *t.Id)
+
+	if err != nil {
+		http.Error(w, "error fetching thread for lock", http.StatusInternalServerError)
+		return
+	}
+
+	if locked {
+		http.Error(w, "thread is locked", http.StatusInternalServerError)
+		return
+	}
+	// await assertEditPermissionOfThread(authUserId, id);
+	isCreator, err := app.store.Threads.IsThreadOwner(r.Context(), userId, *t.Id)
+	if err != nil {
+		http.Error(w, "error fetching thread for creator", http.StatusInternalServerError)
+		return
+	}
+	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
+	if err != nil {
+		http.Error(w, "error fetching if user admin", http.StatusInternalServerError)
+		return
+	}
+
+	if !(isCreator || isAdmin) {
+		http.Error(w, "Permisson Denied", http.StatusForbidden)
+		return
+	}
+
+	err = app.store.Threads.UpdateThread(r.Context(), &newThread)
+
+	if err != nil {
+		http.Error(w, "Error updating thread", http.StatusInternalServerError)
+		return
+	}
+
+	println(userId)
+
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(make(map[string]string)) // send empty object?
 }

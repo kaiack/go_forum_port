@@ -52,9 +52,8 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	}
 
 	u.Password = hashed
-
 	// Empty users ->this is first user. Set them to admin
-	setAdmin := !usersEmpty
+	setAdmin := usersEmpty
 
 	newUser := store.User{Name: u.Name, Email: u.Email, Password: u.Password, Admin: &setAdmin}
 	err = app.store.Users.Create(r.Context(), &newUser)

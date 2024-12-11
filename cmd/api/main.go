@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"log"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/kaiack/goforum/internal/env"
 	"github.com/kaiack/goforum/internal/store"
 	"github.com/kaiack/goforum/utils"
@@ -37,10 +38,13 @@ func main() {
 		log.Fatalf("Need secret to be 32 chars in len or more")
 	}
 
+	validate := validator.New(validator.WithRequiredStructEnabled())
+
 	app := &application{
 		config:     cfg,
 		store:      store,
 		tokenMaker: *utils.NewJWTMaker(secret),
+		validator:  validate,
 	}
 
 	mux := app.mount()

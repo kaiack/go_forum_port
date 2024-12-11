@@ -7,9 +7,13 @@ import (
 
 type Storage struct {
 	Threads interface {
-		Create(context.Context, *Thread) error
+		CreateThread(context.Context, *Thread) error
 		GetThread(context.Context, int64) (*Thread, error)
 		GetThreads(context.Context, int64, int64, bool) ([]int64, error)
+		UpdateThread(ctx context.Context, thread *Thread) error
+		ValidateThreadId(ctx context.Context, id int64) error
+		IsThreadLocked(ctx context.Context, id int64) (bool, error)
+		IsThreadOwner(ctx context.Context, userId int64, threadId int64) (bool, error)
 	}
 	Users interface {
 		Create(context.Context, *User) error
