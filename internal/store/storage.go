@@ -13,6 +13,7 @@ type Storage struct {
 		UpdateThread(ctx context.Context, thread *Thread) error
 		DeleteThread(ctx context.Context, threadId int64) error
 		LikeThread(ctx context.Context, threadId int64, userId int64) error
+		WatchThread(ctx context.Context, threadId int64, userId int64) error
 		ValidateThreadId(ctx context.Context, id int64) error
 		IsThreadLocked(ctx context.Context, id int64) (bool, error)
 		IsThreadOwner(ctx context.Context, userId int64, threadId int64) (bool, error)

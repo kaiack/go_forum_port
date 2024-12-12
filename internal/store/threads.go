@@ -188,6 +188,12 @@ func (s *ThreadsStore) LikeThread(ctx context.Context, threadId int64, userId in
 	return err
 }
 
+func (s *ThreadsStore) WatchThread(ctx context.Context, threadId int64, userId int64) error {
+	query := "INSERT INTO watching (userId, threadId) VALUES (?, ?)"
+	_, err := s.db.ExecContext(ctx, query, userId, threadId)
+	return err
+}
+
 func (s *ThreadsStore) ValidateThreadId(ctx context.Context, id int64) error {
 	// Query to check if the given thread ID exists
 	query := "SELECT COUNT(*) FROM threads WHERE id = ?"
