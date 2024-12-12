@@ -17,12 +17,12 @@ type UserUpdateReq struct {
 }
 
 type UserAdminUpdateReq struct {
-	Id     int64 `json:"userId"`
-	TurnOn bool  `json:"turnon"`
+	Id     int64 `json:"userId" validate:"required"`
+	TurnOn *bool `json:"turnon" vaidate:"required"`
 }
 
 type UserGetReq struct {
-	Id int64 `json:"userId"`
+	Id int64 `json:"userId" validate:"required"`
 }
 
 type UserGetRes struct {
@@ -70,9 +70,15 @@ func (app *application) updateUserAdmin(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	var updatedUser = store.User{ID: u.Id, Admin: &u.TurnOn}
+	err := app.validator.Struct(u)
+	if err != nil {
+		utils.HandleValidationError(err, w)
+		return
+	}
 
-	err := app.store.Users.UpdateUser(r.Context(), &updatedUser)
+	var updatedUser = store.User{ID: u.Id, Admin: u.TurnOn}
+
+	err = app.store.Users.UpdateUser(r.Context(), &updatedUser)
 
 	if err != nil {
 		fmt.Println(err)
@@ -89,6 +95,12 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		fmt.Println(err)
 		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		return
+	}
+
+	err := app.validator.Struct(u)
+	if err != nil {
+		utils.HandleValidationError(err, w)
 		return
 	}
 

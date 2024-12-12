@@ -10,9 +10,9 @@ import (
 )
 
 type UserRegisterReq struct {
-	Email    string `json:"email"`
-	Name     string `json:"name"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required"`
+	Name     string `json:"name" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type UserRegisterRes struct {
@@ -21,8 +21,8 @@ type UserRegisterRes struct {
 }
 
 type UserLoginReq struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required"`
+	Password string `json:"password" validate:"required"`
 }
 
 type userLoginRes struct {
@@ -36,6 +36,12 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		fmt.Println(err)
 		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		return
+	}
+
+	err := app.validator.Struct(u)
+	if err != nil {
+		utils.HandleValidationError(err, w)
 		return
 	}
 
@@ -89,8 +95,15 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	err := app.validator.Struct(u)
+	if err != nil {
+		utils.HandleValidationError(err, w)
+		return
+	}
+
 	fetchedUser, err := app.store.Users.GetUserByEmail(r.Context(), u.Email)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "User doesn't exist", http.StatusBadRequest)
 		return
 	}

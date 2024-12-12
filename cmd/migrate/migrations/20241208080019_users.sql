@@ -8,7 +8,7 @@ CREATE TABLE users (
     password TEXT NOT NULL,
     email TEXT UNIQUE NOT NULL,
     admin BOOLEAN DEFAULT FALSE NOT NULL,
-    image TEXT,
+    image TEXT DEFAULT '',
     createdAt DATETIME DEFAULT CURRENT_TIMESTAMP NOT NULL
 );
 INSERT INTO users (name, password, email, admin) VALUES ('Alice', 'password123', 'alice@example.com', 0);
