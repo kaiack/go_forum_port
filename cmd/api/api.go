@@ -64,6 +64,7 @@ func (app *application) mount() http.Handler {
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/", app.GetThreadHandler)
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Put("/", app.EditThreadHandler)
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Delete("/", app.DeleteThreadHandler)
+		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Put("/like", app.LikeThreadHandler)
 	})
 
 	r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/threads", app.GetThreadsHandler)

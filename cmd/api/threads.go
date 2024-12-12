@@ -43,6 +43,11 @@ type DeleteThreadReq struct {
 	Id *int64 `json:"id" validate:"required,gte=1"`
 }
 
+type LikeThreadReq struct {
+	Id     *int64 `json:"id" validate:"required,gte=1"`
+	TurnOn *bool  `json:"turnOn" validate:"required"`
+}
+
 // id, title, isPublic, content, lock
 func (app *application) MakeThreadHandler(w http.ResponseWriter, r *http.Request) {
 	var t MakeThreadReq
@@ -282,6 +287,59 @@ func (app *application) DeleteThreadHandler(w http.ResponseWriter, r *http.Reque
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(make(map[string]string)) // send empty object?
+}
+
+func (app *application) LikeThreadHandler(w http.ResponseWriter, r *http.Request) {
+	var t LikeThreadReq
+
+	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+		fmt.Println(err)
+		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		return
+	}
+
+	err := app.validator.Struct(t)
+
+	if err != nil {
+		utils.HandleValidationError(err, w)
+		return
+	}
+
+	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
+	userId := claims.Id
+
+	// Check given threadID present in db
+	err = app.store.Threads.ValidateThreadId(r.Context(), *t.Id)
+	if err != nil {
+		http.Error(w, "thread id not valid", http.StatusInternalServerError)
+		return
+	}
+
+	// Check if user has permission to like this thread.
+	isCreator, err := app.store.Threads.IsThreadOwner(r.Context(), userId, *t.Id)
+	if err != nil {
+		http.Error(w, "error fetching thread for creator", http.StatusInternalServerError)
+		return
+	}
+	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
+	if err != nil {
+		http.Error(w, "error fetching if user admin", http.StatusInternalServerError)
+		return
+	}
+	isPublic, err := app.store.Threads.IsThreadPublic(r.Context(), *t.Id)
+	if err != nil {
+		http.Error(w, "error fetching thread data", http.StatusInternalServerError)
+		return
+	}
+	fmt.Println(isPublic)
+	if !isPublic && !(isAdmin || isCreator) {
+		http.Error(w, "Permisson Denied", http.StatusForbidden)
+		return
+	}
+
+	app.store.Threads.LikeThread(r.Context(), *t.Id, userId)
+
+	fmt.Println(userId)
 }
 
 // TODO:

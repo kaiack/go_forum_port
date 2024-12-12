@@ -182,6 +182,12 @@ func (s *ThreadsStore) DeleteThread(ctx context.Context, threadId int64) error {
 	return err
 }
 
+func (s *ThreadsStore) LikeThread(ctx context.Context, threadId int64, userId int64) error {
+	query := "INSERT INTO likes (user_id, thread_id) VALUES (?, ?)"
+	_, err := s.db.ExecContext(ctx, query, userId, threadId)
+	return err
+}
+
 func (s *ThreadsStore) ValidateThreadId(ctx context.Context, id int64) error {
 	// Query to check if the given thread ID exists
 	query := "SELECT COUNT(*) FROM threads WHERE id = ?"
@@ -223,4 +229,17 @@ func (s *ThreadsStore) IsThreadOwner(ctx context.Context, userId int64, threadId
 	}
 
 	return userId == creatorId, nil
+}
+
+func (s *ThreadsStore) IsThreadPublic(ctx context.Context, id int64) (bool, error) {
+	// Query to check if the given thread is locked
+	query := "SELECT isPublic FROM threads WHERE id = ?"
+
+	var public bool
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&public)
+	if err != nil {
+		return false, fmt.Errorf("failed to execute query: %v", err)
+	}
+
+	return public, nil
 }
