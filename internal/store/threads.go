@@ -176,6 +176,12 @@ func (s *ThreadsStore) UpdateThread(ctx context.Context, thread *Thread) error {
 	return err
 }
 
+func (s *ThreadsStore) DeleteThread(ctx context.Context, threadId int64) error {
+	query := "DELETE FROM threads WHERE id = ?"
+	_, err := s.db.ExecContext(ctx, query, threadId)
+	return err
+}
+
 func (s *ThreadsStore) ValidateThreadId(ctx context.Context, id int64) error {
 	// Query to check if the given thread ID exists
 	query := "SELECT COUNT(*) FROM threads WHERE id = ?"

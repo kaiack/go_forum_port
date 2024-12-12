@@ -11,6 +11,7 @@ type Storage struct {
 		GetThread(context.Context, int64) (*Thread, error)
 		GetThreads(context.Context, int64, int64, bool) ([]int64, error)
 		UpdateThread(ctx context.Context, thread *Thread) error
+		DeleteThread(ctx context.Context, threadId int64) error
 		ValidateThreadId(ctx context.Context, id int64) error
 		IsThreadLocked(ctx context.Context, id int64) (bool, error)
 		IsThreadOwner(ctx context.Context, userId int64, threadId int64) (bool, error)
