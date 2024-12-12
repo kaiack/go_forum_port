@@ -67,16 +67,15 @@ func (app *application) mount() http.Handler {
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Put("/like", app.LikeThreadHandler)
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Put("/watch", app.WatchThreadHandler)
 	})
-
 	r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/threads", app.GetThreadsHandler)
 
-	r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/comments", app.GetCommentsHandler)
 	r.Route("/comment", func(r chi.Router) {
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Post("/", app.MakeCommentHandler)
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Put("/", app.EditCommentHandler)
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Delete("/", app.DeleteCommentHandler)
 		r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Post("/like", app.LikeCommentHandler)
 	})
+	r.With(GetAuthMiddleWareFunc(&app.tokenMaker)).Get("/comments", app.GetCommentsHandler)
 
 	return r
 }

@@ -31,6 +31,22 @@ func (s *CommentsStore) Create(ctx context.Context, comment *Comment) error {
 	return err
 }
 
+func (s *CommentsStore) EditComment(ctx context.Context, commentId int64, content string) error {
+	return nil
+}
+
+func (s *CommentsStore) DeleteComment(ctx context.Context, commentId int64) error {
+	return nil
+}
+
+func (s *CommentsStore) LikeComment(ctx context.Context, commentId int64, userId int64) error {
+	return nil
+}
+
+func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) error {
+	return nil
+}
+
 /*
 	SELECT t.id AS thread_id, t.title, t.content, c.id AS comment_id, c.content AS comment_content, c.created_at AS comment_created_at
 	FROM threads t
