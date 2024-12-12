@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"database/sql"
+	"fmt"
 )
 
 type Comment struct {
@@ -10,7 +11,7 @@ type Comment struct {
 	Content         string `json:"content"`
 	CreatorId       int64  `json:"creatorId"` // Foreign Key
 	ThreadId        int64  `json:"threadId"`  // Foreign Key
-	ParentCommentId int64  `json:"parentCommentId"`
+	ParentCommentId *int64 `json:"parentCommentId"`
 	CreatedAt       string `json:"createdAt"`
 }
 
@@ -32,6 +33,16 @@ func (s *CommentsStore) Create(ctx context.Context, comment *Comment) error {
 }
 
 func (s *CommentsStore) EditComment(ctx context.Context, commentId int64, content string) error {
+	query := `UPDATE comments SET content = ?WHERE id = ?;`
+
+	// Execute the query
+	_, err := s.db.Exec(query, content, commentId)
+	if err != nil {
+		// Return the error if the update fails
+		return fmt.Errorf("failed to update comment: %w", err)
+	}
+
+	// No error, return nil
 	return nil
 }
 
@@ -45,6 +56,26 @@ func (s *CommentsStore) LikeComment(ctx context.Context, commentId int64, userId
 
 func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) error {
 	return nil
+}
+
+func (s *CommentsStore) CheckCommentValid(ctx context.Context, commentId int64) (bool, error) {
+	// if a parentComment is provided, then it can be nil.
+	query := `
+	SELECT COUNT(*) 
+	FROM comments 
+	WHERE id = ?;
+`
+
+	// Execute the query
+	var count int
+	err := s.db.QueryRowContext(ctx, query, commentId).Scan(&count)
+	if err != nil {
+		// Return any error that occurs during the query execution
+		return false, fmt.Errorf("error checking comment ID: %w", err)
+	}
+
+	// If count is greater than 0, the comment ID exists
+	return count > 0, nil
 }
 
 /*
