@@ -190,13 +190,6 @@ func (app *application) EditThreadHandler(w http.ResponseWriter, r *http.Request
 	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
 	userId := claims.Id
 
-	newThread := store.Thread{
-		ID:       *t.Id,
-		Content:  t.Content,
-		Title:    t.Title,
-		IsPublic: t.IsPublic,
-		Lock:     t.Lock,
-	}
 	// await assertValidThread(id);
 	err = app.store.Threads.ValidateThreadId(r.Context(), *t.Id)
 	if err != nil {
@@ -230,6 +223,14 @@ func (app *application) EditThreadHandler(w http.ResponseWriter, r *http.Request
 	if !(isCreator || isAdmin) {
 		http.Error(w, "Permisson Denied", http.StatusForbidden)
 		return
+	}
+
+	newThread := store.Thread{
+		ID:       *t.Id,
+		Content:  t.Content,
+		Title:    t.Title,
+		IsPublic: t.IsPublic,
+		Lock:     t.Lock,
 	}
 
 	err = app.store.Threads.UpdateThread(r.Context(), &newThread)

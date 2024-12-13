@@ -58,7 +58,11 @@ func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) error {
 	return nil
 }
 
-func (s *CommentsStore) CheckCommentValid(ctx context.Context, commentId int64) (bool, error) {
+func (s *CommentsStore) CheckCommentValid(ctx context.Context, commentId *int64, canBeNil bool) error {
+	if commentId == nil && canBeNil {
+		return nil
+	}
+
 	// if a parentComment is provided, then it can be nil.
 	query := `
 	SELECT EXISTS(
@@ -70,14 +74,19 @@ func (s *CommentsStore) CheckCommentValid(ctx context.Context, commentId int64) 
 
 	// Execute the query
 	var exists bool
-	err := s.db.QueryRowContext(ctx, query, commentId).Scan(&exists)
+	err := s.db.QueryRowContext(ctx, query, *commentId).Scan(&exists)
 	if err != nil {
 		// Return any error that occurs during the query execution
-		return false, fmt.Errorf("error checking comment ID: %w", err)
+		return fmt.Errorf("error checking comment ID: %w", err)
+	}
+
+	// IF a parent comment's id is provided it can be null.
+	if !exists {
+		return fmt.Errorf("Comment Id Invalid: %w", err)
 	}
 
 	// If count is greater than 0, the comment ID exists
-	return exists, nil
+	return nil
 }
 
 func (s *CommentsStore) CheckCommentCreator(ctx context.Context, commentId int64, userId int64) (bool, error) {

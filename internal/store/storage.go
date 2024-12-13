@@ -28,13 +28,15 @@ type Storage struct {
 		IsUserAdmin(context.Context, int64) (bool, error)
 	}
 	Comments interface {
-		Create(context.Context, *Comment)
+		Create(context.Context, *Comment) error
+		CheckCommentValid(ctx context.Context, commentId *int64, canBeNil bool) error
 	}
 }
 
 func NewStorage(db *sql.DB) Storage {
 	return Storage{
-		Threads: &ThreadsStore{db},
-		Users:   &UsersStore{db},
+		Threads:  &ThreadsStore{db},
+		Users:    &UsersStore{db},
+		Comments: &CommentsStore{db},
 	}
 }
