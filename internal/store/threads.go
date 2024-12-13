@@ -196,18 +196,37 @@ func (s *ThreadsStore) WatchThread(ctx context.Context, threadId int64, userId i
 
 func (s *ThreadsStore) ValidateThreadId(ctx context.Context, id int64) error {
 	// Query to check if the given thread ID exists
-	query := "SELECT COUNT(*) FROM threads WHERE id = ?"
+	// query := "SELECT COUNT(*) FROM threads WHERE id = ?"
 
-	var count int
-	err := s.db.QueryRowContext(ctx, query, id).Scan(&count)
+	// var count int
+	// err := s.db.QueryRowContext(ctx, query, id).Scan(&count)
+	// if err != nil {
+	// 	return fmt.Errorf("failed to execute query: %v", err)
+	// }
+
+	// // If count is greater than 0, the thread exists
+	// if count == 0 {
+	// 	return fmt.Errorf("User not found: %v", err)
+	// }
+	// return nil
+
+	query := `
+	SELECT EXISTS(
+		SELECT 1
+		FROM threads
+		WHERE id = ?
+	);`
+
+	var exists bool
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&exists)
 	if err != nil {
-		return fmt.Errorf("failed to execute query: %v", err)
+		// Return any error that occurs during the query execution
+		return fmt.Errorf("error checking if thread exists: %w", err)
+	}
+	if !exists {
+		return fmt.Errorf("Thread not found: %v", err)
 	}
 
-	// If count is greater than 0, the thread exists
-	if count == 0 {
-		return fmt.Errorf("User not found: %v", err)
-	}
 	return nil
 }
 
@@ -226,26 +245,57 @@ func (s *ThreadsStore) IsThreadLocked(ctx context.Context, id int64) (bool, erro
 
 func (s *ThreadsStore) IsThreadOwner(ctx context.Context, userId int64, threadId int64) (bool, error) {
 	// Query to check if the given thread is locked
-	query := "SELECT creatorId FROM threads WHERE id = ?"
+	// query := "SELECT creatorId FROM threads WHERE id = ?"
 
-	var creatorId int64
-	err := s.db.QueryRowContext(ctx, query, threadId).Scan(&creatorId)
+	// var creatorId int64
+	// err := s.db.QueryRowContext(ctx, query, threadId).Scan(&creatorId)
+	// if err != nil {
+	// 	return false, fmt.Errorf("failed to execute query: %v", err)
+	// }
+
+	// return userId == creatorId, nil
+
+	query := `
+	SELECT EXISTS(
+		SELECT 1
+		FROM threads
+		WHERE id = ? AND creatorId = ?
+	);`
+
+	var exists bool
+	err := s.db.QueryRowContext(ctx, query, threadId, userId).Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("failed to execute query: %v", err)
+		// Return any error that occurs during the query execution
+		return false, fmt.Errorf("error checking if user created thread: %w", err)
 	}
 
-	return userId == creatorId, nil
+	return exists, nil
 }
 
 func (s *ThreadsStore) IsThreadPublic(ctx context.Context, id int64) (bool, error) {
 	// Query to check if the given thread is locked
-	query := "SELECT isPublic FROM threads WHERE id = ?"
+	// query := "SELECT isPublic FROM threads WHERE id = ?"
 
-	var public bool
-	err := s.db.QueryRowContext(ctx, query, id).Scan(&public)
+	// var public bool
+	// err := s.db.QueryRowContext(ctx, query, id).Scan(&public)
+	// if err != nil {
+	// 	return false, fmt.Errorf("failed to execute query: %v", err)
+	// }
+
+	// return public, nil
+	query := `
+	SELECT EXISTS(
+		SELECT 1
+		FROM threads
+		WHERE id = ? AND isPublic = true
+	);`
+
+	var exists bool
+	err := s.db.QueryRowContext(ctx, query, id).Scan(&exists)
 	if err != nil {
-		return false, fmt.Errorf("failed to execute query: %v", err)
+		// Return any error that occurs during the query execution
+		return false, fmt.Errorf("error checking if thread public: %w", err)
 	}
 
-	return public, nil
+	return exists, nil
 }

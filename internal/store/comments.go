@@ -61,21 +61,43 @@ func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) error {
 func (s *CommentsStore) CheckCommentValid(ctx context.Context, commentId int64) (bool, error) {
 	// if a parentComment is provided, then it can be nil.
 	query := `
-	SELECT COUNT(*) 
-	FROM comments 
-	WHERE id = ?;
+	SELECT EXISTS(
+		SELECT 1
+		FROM comments
+		WHERE id = ?
+	);
 `
 
 	// Execute the query
-	var count int
-	err := s.db.QueryRowContext(ctx, query, commentId).Scan(&count)
+	var exists bool
+	err := s.db.QueryRowContext(ctx, query, commentId).Scan(&exists)
 	if err != nil {
 		// Return any error that occurs during the query execution
 		return false, fmt.Errorf("error checking comment ID: %w", err)
 	}
 
 	// If count is greater than 0, the comment ID exists
-	return count > 0, nil
+	return exists, nil
+}
+
+func (s *CommentsStore) CheckCommentCreator(ctx context.Context, commentId int64, userId int64) (bool, error) {
+	query := `
+	SELECT EXISTS(
+		SELECT 1
+		FROM comments
+		WHERE id = ? AND creator_id = ?
+	);
+	`
+
+	// Execute the query
+	var exists bool
+	err := s.db.QueryRowContext(ctx, query, commentId, userId).Scan(&exists)
+	if err != nil {
+		// Return any error that occurs during the query execution
+		return false, fmt.Errorf("error checking if user created comment: %w", err)
+	}
+
+	return exists, nil
 }
 
 /*
