@@ -33,7 +33,7 @@ func (s *CommentsStore) Create(ctx context.Context, comment *Comment) error {
 }
 
 func (s *CommentsStore) EditComment(ctx context.Context, commentId int64, content string) error {
-	query := `UPDATE comments SET content = ?WHERE id = ?;`
+	query := `UPDATE comments SET content = ? WHERE id = ?;`
 
 	// Execute the query
 	_, err := s.db.Exec(query, content, commentId)
@@ -47,7 +47,9 @@ func (s *CommentsStore) EditComment(ctx context.Context, commentId int64, conten
 }
 
 func (s *CommentsStore) DeleteComment(ctx context.Context, commentId int64) error {
-	return nil
+	query := "DELETE FROM comments WHERE id = ?"
+	_, err := s.db.ExecContext(ctx, query, commentId)
+	return err
 }
 
 func (s *CommentsStore) LikeComment(ctx context.Context, commentId int64, userId int64) error {

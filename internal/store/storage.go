@@ -30,6 +30,9 @@ type Storage struct {
 	Comments interface {
 		Create(context.Context, *Comment) error
 		CheckCommentValid(ctx context.Context, commentId *int64, canBeNil bool) error
+		CheckCommentCreator(ctx context.Context, commentId int64, userId int64) (bool, error)
+		EditComment(ctx context.Context, commentId int64, content string) error
+		DeleteComment(ctx context.Context, commentId int64) error
 	}
 }
 
