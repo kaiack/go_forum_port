@@ -338,7 +338,7 @@ func (app *application) LikeThreadHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 	fmt.Println(isPublic)
-	if !isPublic && !(isAdmin || isCreator) {
+	if !(isPublic || isAdmin || isCreator) {
 		http.Error(w, "Permisson Denied", http.StatusForbidden)
 		return
 	}

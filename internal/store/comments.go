@@ -52,8 +52,16 @@ func (s *CommentsStore) DeleteComment(ctx context.Context, commentId int64) erro
 	return err
 }
 
-func (s *CommentsStore) LikeComment(ctx context.Context, commentId int64, userId int64) error {
-	return nil
+func (s *CommentsStore) LikeComment(ctx context.Context, commentId int64, userId int64, turnOn bool) error {
+	if turnOn {
+		query := "INSERT INTO likes (user_id, comment_id) VALUES (?, ?)"
+		_, err := s.db.ExecContext(ctx, query, userId, commentId)
+		return err
+	} else {
+		query := "DELETE FROM likes WHERE user_id = ? AND comment_id = ?"
+		_, err := s.db.ExecContext(ctx, query, userId, commentId)
+		return err
+	}
 }
 
 func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) error {
@@ -109,6 +117,14 @@ func (s *CommentsStore) CheckCommentCreator(ctx context.Context, commentId int64
 	}
 
 	return exists, nil
+}
+
+func (s *CommentsStore) GetThreadFromComment(ctx context.Context, commentId int64) (int64, error) {
+	query := `SELECT thread_id from comments where id = ?`
+	var threadId int64
+	err := s.db.QueryRowContext(ctx, query, commentId).Scan(&threadId)
+
+	return threadId, err
 }
 
 /*
