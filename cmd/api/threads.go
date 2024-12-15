@@ -20,7 +20,7 @@ type MakeThreadRes struct {
 }
 
 type GetThreadReq struct {
-	Id int64 `json:"id" validate:"required"`
+	Id *int64 `json:"id" validate:"required,gte=1"`
 }
 
 type GetThreadRes = store.Thread
@@ -113,8 +113,8 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	thread, err := app.store.Threads.GetThread(r.Context(), t.Id)
-	thread.ID = t.Id
+	thread, err := app.store.Threads.GetThread(r.Context(), *t.Id)
+	thread.ID = *t.Id
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error finding thread: %s", err), http.StatusBadRequest)
