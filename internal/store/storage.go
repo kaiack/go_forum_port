@@ -35,6 +35,7 @@ type Storage struct {
 		DeleteComment(ctx context.Context, commentId int64) error
 		LikeComment(ctx context.Context, commentId int64, userId int64, turnOn bool) error
 		GetThreadFromComment(ctx context.Context, commentId int64) (int64, error)
+		GetComments(ctx context.Context, threadId int64) ([]Comment, error)
 	}
 }
 

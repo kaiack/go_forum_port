@@ -4,20 +4,19 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strconv"
 	"strings"
 )
 
 type Thread struct {
-	ID        int64           `json:"id"`
-	Content   string          `json:"content"`
-	Title     string          `json:"title"`
-	IsPublic  *bool           `json:"isPublic"`
-	CreatorID int64           `json:"creatorId"`
-	CreatedAt string          `json:"createdAt"`
-	Lock      *bool           `json:"lock"`
-	Likes     map[string]bool `json:"likes"`
-	Watchees  map[string]bool `json:"watchees"`
+	ID        int64          `json:"id"`
+	Content   string         `json:"content"`
+	Title     string         `json:"title"`
+	IsPublic  *bool          `json:"isPublic"`
+	CreatorID int64          `json:"creatorId"`
+	CreatedAt string         `json:"createdAt"`
+	Lock      *bool          `json:"lock"`
+	Likes     map[int64]bool `json:"likes"`
+	Watchees  map[int64]bool `json:"watchees"`
 }
 
 type ThreadsStore struct {
@@ -64,7 +63,7 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 	}
 	defer likesRows.Close() // defer runs after this function returns.
 
-	likesMap := make(map[string]bool)
+	likesMap := make(map[int64]bool)
 
 	for likesRows.Next() {
 		var userID int64
@@ -72,7 +71,7 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 			return nil, err
 		}
 		fmt.Println(userID)
-		likesMap[strconv.FormatInt(userID, 10)] = true // Mark the user as having liked the thread
+		likesMap[userID] = true // Mark the user as having liked the thread
 	}
 
 	t.Likes = likesMap
@@ -86,14 +85,14 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 	}
 
 	defer watchingRows.Close() // defer runs after this function returns.
-	watchingMap := make(map[string]bool)
+	watchingMap := make(map[int64]bool)
 
 	for watchingRows.Next() {
 		var userID int64
 		if err := watchingRows.Scan(&userID); err != nil {
 			return nil, err
 		}
-		watchingMap[strconv.FormatInt(userID, 10)] = true // Mark the user as having liked the thread
+		watchingMap[userID] = true // Mark the user as having liked the thread
 	}
 
 	t.Watchees = watchingMap

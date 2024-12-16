@@ -123,10 +123,10 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 
 	// Make sure users gets an empty map in json rather than null.
 	if thread.Likes == nil {
-		thread.Likes = make(map[string]bool)
+		thread.Likes = make(map[int64]bool)
 	}
 	if thread.Watchees == nil {
-		thread.Watchees = make(map[string]bool)
+		thread.Watchees = make(map[int64]bool)
 	}
 
 	w.Header().Set("Content-Type", "application/json")

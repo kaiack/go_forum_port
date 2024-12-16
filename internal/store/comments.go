@@ -7,12 +7,13 @@ import (
 )
 
 type Comment struct {
-	ID              int64  `json:"id"`
-	Content         string `json:"content"`
-	CreatorId       int64  `json:"creatorId"` // Foreign Key
-	ThreadId        int64  `json:"threadId"`  // Foreign Key
-	ParentCommentId *int64 `json:"parentCommentId"`
-	CreatedAt       string `json:"createdAt"`
+	ID              int64          `json:"id"`
+	Content         string         `json:"content"`
+	CreatorId       int64          `json:"creatorId"` // Foreign Key
+	ThreadId        int64          `json:"threadId"`  // Foreign Key
+	ParentCommentId *int64         `json:"parentCommentId"`
+	CreatedAt       string         `json:"createdAt"`
+	Likes           map[int64]bool `json:"likes"`
 }
 
 type CommentsStore struct {
@@ -64,8 +65,62 @@ func (s *CommentsStore) LikeComment(ctx context.Context, commentId int64, userId
 	}
 }
 
-func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) error {
-	return nil
+func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) ([]Comment, error) {
+	commentsQuery := `SELECT id, creator_id, thread_id, parent_comment_id, content, created_at
+	FROM comments WHERE thread_id = ?`
+	rows, err := s.db.QueryContext(ctx, commentsQuery, threadId)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch comments: %w", err)
+	}
+
+	defer rows.Close()
+
+	var comments []Comment
+
+	for rows.Next() {
+		var comment Comment
+		err := rows.Scan(&comment.ID, &comment.CreatorId, &comment.ThreadId, &comment.ParentCommentId, &comment.Content, &comment.CreatedAt)
+		if err != nil {
+			return nil, fmt.Errorf("failed to scan comment: %w", err)
+		}
+
+		// Initialize the Likes map for the comment
+		comment.Likes = make(map[int64]bool)
+
+		// Fetch likes for the current comment
+		likesQuery := `SELECT user_id FROM likes WHERE comment_id = ? AND thread_id IS NULL`
+		likesRows, err := s.db.Query(likesQuery, comment.ID)
+		if err != nil {
+			return nil, fmt.Errorf("failed to fetch likes for comment %d: %w", comment.ID, err)
+		}
+		defer likesRows.Close()
+
+		// Populate the Likes map
+		for likesRows.Next() {
+			var userID int64
+			err := likesRows.Scan(&userID)
+			if err != nil {
+				return nil, fmt.Errorf("failed to scan like for comment %d: %w", comment.ID, err)
+			}
+			comment.Likes[userID] = true
+		}
+
+		// Check for errors while reading likes
+		if err := likesRows.Err(); err != nil {
+			return nil, fmt.Errorf("error while reading likes for comment %d: %w", comment.ID, err)
+		}
+
+		// Append the comment with likes
+		comments = append(comments, comment)
+	}
+
+	// Check for errors while reading comments
+	if err := rows.Err(); err != nil {
+		return nil, fmt.Errorf("error while reading comments: %w", err)
+	}
+
+	return comments, nil
 }
 
 func (s *CommentsStore) CheckCommentValid(ctx context.Context, commentId *int64, canBeNil bool) error {
@@ -79,8 +134,7 @@ func (s *CommentsStore) CheckCommentValid(ctx context.Context, commentId *int64,
 		SELECT 1
 		FROM comments
 		WHERE id = ?
-	);
-`
+	);`
 
 	// Execute the query
 	var exists bool
@@ -125,6 +179,31 @@ func (s *CommentsStore) GetThreadFromComment(ctx context.Context, commentId int6
 	err := s.db.QueryRowContext(ctx, query, commentId).Scan(&threadId)
 
 	return threadId, err
+}
+
+func (s *CommentsStore) GetCommentLikes(ctx context.Context, comment *Comment, commentId int64) error {
+	query := `SELECT user_id FROM likes WHERE comment_id = ? AND thread_id IS NULL`
+
+	likesRows, err := s.db.QueryContext(ctx, query, commentId)
+	if err != nil {
+		return err
+	}
+	defer likesRows.Close() // defer runs after this function returns.
+
+	likesMap := make(map[int64]bool)
+
+	for likesRows.Next() {
+		var userID int64
+		if err := likesRows.Scan(&userID); err != nil {
+			return err
+		}
+
+		likesMap[userID] = true // Mark the user as having liked the thread
+	}
+
+	comment.Likes = likesMap
+
+	return nil
 }
 
 /*
