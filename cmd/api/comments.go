@@ -300,7 +300,7 @@ func (app *application) LikeCommentHandler(w http.ResponseWriter, r *http.Reques
 		http.Error(w, "error fetching thread data", http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(isPublic)
+	// fmt.Println(isPublic)
 	if !(isPublic || isAdmin || isCreator) {
 		http.Error(w, "Permisson Denied", http.StatusForbidden)
 		return

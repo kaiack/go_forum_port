@@ -130,7 +130,7 @@ func (s *ThreadsStore) GetThreads(ctx context.Context, start int64, userId int64
 		if err := threadIds.Scan(&threadId); err != nil {
 			return nil, err
 		}
-		fmt.Println(threadId)
+		// fmt.Println(threadId)
 		idsList = append(idsList, threadId)
 	}
 
@@ -170,7 +170,7 @@ func (s *ThreadsStore) UpdateThread(ctx context.Context, thread *Thread) error {
 	query += " WHERE id = ?"
 	args = append(args, thread.ID)
 	_, err := s.db.ExecContext(ctx, query, args...)
-	fmt.Println(err)
+	// fmt.Println(err)
 	return err
 }
 
