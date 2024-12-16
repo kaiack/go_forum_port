@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/kaiack/goforum/internal/store"
 	"github.com/kaiack/goforum/utils"
@@ -99,22 +100,38 @@ func (app *application) MakeThreadHandler(w http.ResponseWriter, r *http.Request
 }
 
 func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request) {
-	var t GetThreadReq
+	// var t GetThreadReq
 
-	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+	// 	fmt.Println(err)
+	// 	http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// 	return
+	// }
+
+	// err := app.validator.Struct(t)
+	// if err != nil {
+	// 	utils.HandleValidationError(err, w)
+	// 	return
+	// }
+
+	query := r.URL.Query()
+
+	// Get the 'term' query parameter (required)
+	threadIdString := query.Get("id")
+	if threadIdString == "" {
+		http.Error(w, "Missing required 'userId' query parameter", http.StatusBadRequest)
 		return
 	}
 
-	err := app.validator.Struct(t)
-	if err != nil {
-		utils.HandleValidationError(err, w)
+	threadId, err := strconv.ParseInt(threadIdString, 10, 64)
+
+	if err != nil || threadId < 1 {
+		http.Error(w, "Invalid User ID", http.StatusBadRequest)
 		return
 	}
 
-	thread, err := app.store.Threads.GetThread(r.Context(), *t.Id)
-	thread.ID = *t.Id
+	thread, err := app.store.Threads.GetThread(r.Context(), threadId)
+	thread.ID = threadId
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error finding thread: %s", err), http.StatusBadRequest)
@@ -123,10 +140,10 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 
 	// Make sure users gets an empty map in json rather than null.
 	if thread.Likes == nil {
-		thread.Likes = make(map[int64]bool)
+		thread.Likes = make([]int64, 0)
 	}
 	if thread.Watchees == nil {
-		thread.Watchees = make(map[int64]bool)
+		thread.Watchees = make([]int64, 0)
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -135,17 +152,32 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 }
 
 func (app *application) GetThreadsHandler(w http.ResponseWriter, r *http.Request) {
-	var t GetThreadsReq
+	// var t GetThreadsReq
 
-	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
-		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
+	// 	fmt.Println(err)
+	// 	http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// 	return
+	// }
+
+	// err := app.validator.Struct(t)
+	// if err != nil {
+	// 	utils.HandleValidationError(err, w)
+	// }
+	query := r.URL.Query()
+
+	// Get the 'term' query parameter (required)
+	startString := query.Get("start")
+	if startString == "" {
+		http.Error(w, "Missing required 'start' query parameter", http.StatusBadRequest)
 		return
 	}
 
-	err := app.validator.Struct(t)
-	if err != nil {
-		utils.HandleValidationError(err, w)
+	start, err := strconv.ParseInt(startString, 10, 64)
+
+	if err != nil || start < 0 {
+		http.Error(w, "Invalid start ID", http.StatusBadRequest)
+		return
 	}
 
 	claims := r.Context().Value(authKey{}).(*utils.UserClaims)
@@ -157,7 +189,7 @@ func (app *application) GetThreadsHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	threads, err := app.store.Threads.GetThreads(r.Context(), t.Start, userId, isAdmin)
+	threads, err := app.store.Threads.GetThreads(r.Context(), start, userId, isAdmin)
 
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error fetching threads: %s", err), http.StatusInternalServerError)

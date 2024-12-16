@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/kaiack/goforum/internal/store"
 	"github.com/kaiack/goforum/utils"
@@ -90,21 +91,37 @@ func (app *application) updateUserAdmin(w http.ResponseWriter, r *http.Request) 
 }
 
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
-	var u UserGetReq
+	// var u UserGetReq
 
-	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+	// 	fmt.Println(err)
+	// 	http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// 	return
+	// }
+
+	// err := app.validator.Struct(u)
+	// if err != nil {
+	// 	utils.HandleValidationError(err, w)
+	// 	return
+	// }
+
+	query := r.URL.Query()
+
+	// Get the 'term' query parameter (required)
+	userIdString := query.Get("userId")
+	if userIdString == "" {
+		http.Error(w, "Missing required 'userId' query parameter", http.StatusBadRequest)
 		return
 	}
 
-	err := app.validator.Struct(u)
-	if err != nil {
-		utils.HandleValidationError(err, w)
+	userId, err := strconv.ParseInt(userIdString, 10, 64)
+
+	if err != nil || userId < 1 {
+		http.Error(w, "Invalid User ID", http.StatusBadRequest)
 		return
 	}
 
-	userInfo, err := app.store.Users.GetUserById(r.Context(), u.Id)
+	userInfo, err := app.store.Users.GetUserById(r.Context(), userId)
 
 	if err != nil {
 		http.Error(w, "error fetching user", http.StatusInternalServerError)

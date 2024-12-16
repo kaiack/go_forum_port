@@ -7,13 +7,13 @@ import (
 )
 
 type Comment struct {
-	ID              int64          `json:"id"`
-	Content         string         `json:"content"`
-	CreatorId       int64          `json:"creatorId"` // Foreign Key
-	ThreadId        int64          `json:"threadId"`  // Foreign Key
-	ParentCommentId *int64         `json:"parentCommentId"`
-	CreatedAt       string         `json:"createdAt"`
-	Likes           map[int64]bool `json:"likes"`
+	ID              int64   `json:"id"`
+	Content         string  `json:"content"`
+	CreatorId       int64   `json:"creatorId"` // Foreign Key
+	ThreadId        int64   `json:"threadId"`  // Foreign Key
+	ParentCommentId *int64  `json:"parentCommentId"`
+	CreatedAt       string  `json:"createdAt"`
+	Likes           []int64 `json:"likes"`
 }
 
 type CommentsStore struct {
@@ -86,7 +86,7 @@ func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) ([]Comm
 		}
 
 		// Initialize the Likes map for the comment
-		comment.Likes = make(map[int64]bool)
+		comment.Likes = make([]int64, 0)
 
 		// Fetch likes for the current comment
 		likesQuery := `SELECT user_id FROM likes WHERE comment_id = ? AND thread_id IS NULL`
@@ -103,7 +103,7 @@ func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) ([]Comm
 			if err != nil {
 				return nil, fmt.Errorf("failed to scan like for comment %d: %w", comment.ID, err)
 			}
-			comment.Likes[userID] = true
+			comment.Likes = append(comment.Likes, userID)
 		}
 
 		// Check for errors while reading likes
@@ -181,30 +181,30 @@ func (s *CommentsStore) GetThreadFromComment(ctx context.Context, commentId int6
 	return threadId, err
 }
 
-func (s *CommentsStore) GetCommentLikes(ctx context.Context, comment *Comment, commentId int64) error {
-	query := `SELECT user_id FROM likes WHERE comment_id = ? AND thread_id IS NULL`
+// func (s *CommentsStore) GetCommentLikes(ctx context.Context, comment *Comment, commentId int64) error {
+// 	query := `SELECT user_id FROM likes WHERE comment_id = ? AND thread_id IS NULL`
 
-	likesRows, err := s.db.QueryContext(ctx, query, commentId)
-	if err != nil {
-		return err
-	}
-	defer likesRows.Close() // defer runs after this function returns.
+// 	likesRows, err := s.db.QueryContext(ctx, query, commentId)
+// 	if err != nil {
+// 		return err
+// 	}
+// 	defer likesRows.Close() // defer runs after this function returns.
 
-	likesMap := make(map[int64]bool)
+// 	likesMap := make(map[int64]bool)
 
-	for likesRows.Next() {
-		var userID int64
-		if err := likesRows.Scan(&userID); err != nil {
-			return err
-		}
+// 	for likesRows.Next() {
+// 		var userID int64
+// 		if err := likesRows.Scan(&userID); err != nil {
+// 			return err
+// 		}
 
-		likesMap[userID] = true // Mark the user as having liked the thread
-	}
+// 		likesMap[userID] = true // Mark the user as having liked the thread
+// 	}
 
-	comment.Likes = likesMap
+// 	comment.Likes = likesMap
 
-	return nil
-}
+// 	return nil
+// }
 
 /*
 	SELECT t.id AS thread_id, t.title, t.content, c.id AS comment_id, c.content AS comment_content, c.created_at AS comment_created_at

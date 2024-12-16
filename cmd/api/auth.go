@@ -41,6 +41,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 
 	err := app.validator.Struct(u)
 	if err != nil {
+		fmt.Println(err)
 		utils.HandleValidationError(err, w)
 		return
 	}
@@ -48,13 +49,17 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	// TODO: Check if this is the first user in the db or not.
 	usersEmpty, err := app.store.Users.IsUsersEmpty(r.Context())
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "DB Error", http.StatusInternalServerError)
+		return
 	}
 
 	hashed, err := utils.HashPassword(u.Password)
 
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		return
 	}
 
 	u.Password = hashed
@@ -64,6 +69,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	newUser := store.User{Name: u.Name, Email: u.Email, Password: u.Password, Admin: &setAdmin}
 	err = app.store.Users.Create(r.Context(), &newUser)
 	if err != nil {
+		fmt.Println(err)
 		http.Error(w, "error creating new User", http.StatusInternalServerError)
 		return
 	}
@@ -75,6 +81,8 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 		http.Error(w, "error creating token", http.StatusInternalServerError)
 		return
 	}
+
+	fmt.Println(accessToken, newUser.ID)
 
 	res := UserRegisterRes{
 		Token:  accessToken,

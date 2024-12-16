@@ -8,15 +8,15 @@ import (
 )
 
 type Thread struct {
-	ID        int64          `json:"id"`
-	Content   string         `json:"content"`
-	Title     string         `json:"title"`
-	IsPublic  *bool          `json:"isPublic"`
-	CreatorID int64          `json:"creatorId"`
-	CreatedAt string         `json:"createdAt"`
-	Lock      *bool          `json:"lock"`
-	Likes     map[int64]bool `json:"likes"`
-	Watchees  map[int64]bool `json:"watchees"`
+	ID        int64   `json:"id"`
+	Content   string  `json:"content"`
+	Title     string  `json:"title"`
+	IsPublic  *bool   `json:"isPublic"`
+	CreatorID int64   `json:"creatorId"`
+	CreatedAt string  `json:"createdAt"`
+	Lock      *bool   `json:"lock"`
+	Likes     []int64 `json:"likes"`
+	Watchees  []int64 `json:"watchees"`
 }
 
 type ThreadsStore struct {
@@ -63,18 +63,17 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 	}
 	defer likesRows.Close() // defer runs after this function returns.
 
-	likesMap := make(map[int64]bool)
+	var likesList []int64
 
 	for likesRows.Next() {
 		var userID int64
 		if err := likesRows.Scan(&userID); err != nil {
 			return nil, err
 		}
-		fmt.Println(userID)
-		likesMap[userID] = true // Mark the user as having liked the thread
+		likesList = append(likesList, userID)
 	}
 
-	t.Likes = likesMap
+	t.Likes = likesList
 
 	// -------------------------------------------------------------------------------------------------------
 
@@ -85,17 +84,17 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 	}
 
 	defer watchingRows.Close() // defer runs after this function returns.
-	watchingMap := make(map[int64]bool)
+	var watchingList []int64
 
 	for watchingRows.Next() {
 		var userID int64
 		if err := watchingRows.Scan(&userID); err != nil {
 			return nil, err
 		}
-		watchingMap[userID] = true // Mark the user as having liked the thread
+		watchingList = append(watchingList, userID)
 	}
 
-	t.Watchees = watchingMap
+	t.Watchees = watchingList
 
 	return &t, nil
 }
