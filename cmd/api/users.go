@@ -59,7 +59,9 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(make(map[string]string)) // send empty object?
 }
 
 func (app *application) updateUserAdmin(w http.ResponseWriter, r *http.Request) {
@@ -87,7 +89,9 @@ func (app *application) updateUserAdmin(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
+	json.NewEncoder(w).Encode(make(map[string]string)) // send empty object?
 }
 
 func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {

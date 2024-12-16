@@ -89,7 +89,7 @@ func (s *UsersStore) UpdateUser(ctx context.Context, user *User) error {
 		setClauses = append(setClauses, "image = ?")
 		args = append(args, user.Image)
 	}
-	fmt.Println(*user.Admin)
+
 	if user.Admin != nil {
 		setClauses = append(setClauses, "admin = ?")
 		args = append(args, *user.Admin)
