@@ -121,6 +121,24 @@ func (s *UsersStore) IsUserAdmin(ctx context.Context, id int64) (bool, error) {
 	var isAdmin bool
 	query := `SELECT admin FROM users WHERE id=?`
 	err := s.db.QueryRowContext(ctx, query, id).Scan(&isAdmin)
-
 	return isAdmin, err
+}
+
+func (s *UsersStore) UserExists(ctx context.Context, email string) (bool, error) {
+	query := `
+	SELECT EXISTS(
+		SELECT 1
+		FROM users
+		WHERE email = ?
+	);`
+
+	// Execute the query
+	var exists bool
+	err := s.db.QueryRowContext(ctx, query, email).Scan(&exists)
+	if err != nil {
+		// Return any error that occurs during the query execution
+		return false, fmt.Errorf("error checking comment ID: %w", err)
+	}
+
+	return exists, nil
 }

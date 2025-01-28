@@ -60,7 +60,7 @@ func (app *application) MakeThreadHandler(w http.ResponseWriter, r *http.Request
 
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -86,7 +86,7 @@ func (app *application) MakeThreadHandler(w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 		// Will this cover the case in which creatorId is not present in the DB? -> Should be enforced by foreign key.1
-		http.Error(w, fmt.Sprintf("Error creating thread: %s", err), http.StatusBadRequest)
+		utils.SendError(w, fmt.Sprintf("Error creating thread: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -104,7 +104,7 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 
 	// if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 	// 	fmt.Println(err)
-	// 	http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// 	utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 	// 	return
 	// }
 
@@ -119,14 +119,14 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 	// Get the 'term' query parameter (required)
 	threadIdString := query.Get("id")
 	if threadIdString == "" {
-		http.Error(w, "Missing required 'userId' query parameter", http.StatusBadRequest)
+		utils.SendError(w, "Missing required 'userId' query parameter", http.StatusBadRequest)
 		return
 	}
 
 	threadId, err := strconv.ParseInt(threadIdString, 10, 64)
 
 	if err != nil || threadId < 1 {
-		http.Error(w, "Invalid User ID", http.StatusBadRequest)
+		utils.SendError(w, "Invalid User ID", http.StatusBadRequest)
 		return
 	}
 
@@ -134,7 +134,7 @@ func (app *application) GetThreadHandler(w http.ResponseWriter, r *http.Request)
 	thread.ID = threadId
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error finding thread: %s", err), http.StatusBadRequest)
+		utils.SendError(w, fmt.Sprintf("Error finding thread: %s", err), http.StatusBadRequest)
 		return
 	}
 
@@ -156,7 +156,7 @@ func (app *application) GetThreadsHandler(w http.ResponseWriter, r *http.Request
 
 	// if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 	// 	fmt.Println(err)
-	// 	http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// 	utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 	// 	return
 	// }
 
@@ -169,14 +169,14 @@ func (app *application) GetThreadsHandler(w http.ResponseWriter, r *http.Request
 	// Get the 'term' query parameter (required)
 	startString := query.Get("start")
 	if startString == "" {
-		http.Error(w, "Missing required 'start' query parameter", http.StatusBadRequest)
+		utils.SendError(w, "Missing required 'start' query parameter", http.StatusBadRequest)
 		return
 	}
 
 	start, err := strconv.ParseInt(startString, 10, 64)
 
 	if err != nil || start < 0 {
-		http.Error(w, "Invalid start ID", http.StatusBadRequest)
+		utils.SendError(w, "Invalid start ID", http.StatusBadRequest)
 		return
 	}
 
@@ -185,14 +185,14 @@ func (app *application) GetThreadsHandler(w http.ResponseWriter, r *http.Request
 
 	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
 	if err != nil {
-		http.Error(w, "Error fetching user details", http.StatusInternalServerError)
+		utils.SendError(w, "Error fetching user details", http.StatusInternalServerError)
 		return
 	}
 
 	threads, err := app.store.Threads.GetThreads(r.Context(), start, userId, isAdmin)
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error fetching threads: %s", err), http.StatusInternalServerError)
+		utils.SendError(w, fmt.Sprintf("Error fetching threads: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -212,7 +212,7 @@ func (app *application) EditThreadHandler(w http.ResponseWriter, r *http.Request
 
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -229,35 +229,35 @@ func (app *application) EditThreadHandler(w http.ResponseWriter, r *http.Request
 	// await assertValidThread(id);
 	err = app.store.Threads.ValidateThreadId(r.Context(), *t.Id)
 	if err != nil {
-		http.Error(w, "thread id not valid", http.StatusInternalServerError)
+		utils.SendError(w, "thread id not valid", http.StatusInternalServerError)
 		return
 	}
 	// await assertUnlockedThread(id);
 	locked, err := app.store.Threads.IsThreadLocked(r.Context(), *t.Id)
 
 	if err != nil {
-		http.Error(w, "error fetching thread for lock", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread for lock", http.StatusInternalServerError)
 		return
 	}
 
 	if locked {
-		http.Error(w, "thread is locked", http.StatusInternalServerError)
+		utils.SendError(w, "thread is locked", http.StatusInternalServerError)
 		return
 	}
 	// await assertEditPermissionOfThread(authUserId, id);
 	isCreator, err := app.store.Threads.IsThreadOwner(r.Context(), userId, *t.Id)
 	if err != nil {
-		http.Error(w, "error fetching thread for creator", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread for creator", http.StatusInternalServerError)
 		return
 	}
 	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
 	if err != nil {
-		http.Error(w, "error fetching if user admin", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching if user admin", http.StatusInternalServerError)
 		return
 	}
 
 	if !(isCreator || isAdmin) {
-		http.Error(w, "Permisson Denied", http.StatusForbidden)
+		utils.SendError(w, "Permisson Denied", http.StatusForbidden)
 		return
 	}
 
@@ -272,7 +272,7 @@ func (app *application) EditThreadHandler(w http.ResponseWriter, r *http.Request
 	err = app.store.Threads.UpdateThread(r.Context(), &newThread)
 
 	if err != nil {
-		http.Error(w, "Error updating thread", http.StatusInternalServerError)
+		utils.SendError(w, "Error updating thread", http.StatusInternalServerError)
 		return
 	}
 
@@ -286,7 +286,7 @@ func (app *application) DeleteThreadHandler(w http.ResponseWriter, r *http.Reque
 
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -303,24 +303,24 @@ func (app *application) DeleteThreadHandler(w http.ResponseWriter, r *http.Reque
 	// Check given threadID present in db
 	err = app.store.Threads.ValidateThreadId(r.Context(), *t.Id)
 	if err != nil {
-		http.Error(w, "thread id not valid", http.StatusInternalServerError)
+		utils.SendError(w, "thread id not valid", http.StatusInternalServerError)
 		return
 	}
 
 	// Check if user has permission to delete this thread.
 	isCreator, err := app.store.Threads.IsThreadOwner(r.Context(), userId, *t.Id)
 	if err != nil {
-		http.Error(w, "error fetching thread for creator", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread for creator", http.StatusInternalServerError)
 		return
 	}
 	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
 	if err != nil {
-		http.Error(w, "error fetching if user admin", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching if user admin", http.StatusInternalServerError)
 		return
 	}
 
 	if !(isCreator || isAdmin) {
-		http.Error(w, "Permisson Denied", http.StatusForbidden)
+		utils.SendError(w, "Permisson Denied", http.StatusForbidden)
 		return
 	}
 
@@ -336,7 +336,7 @@ func (app *application) LikeThreadHandler(w http.ResponseWriter, r *http.Request
 
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -353,29 +353,29 @@ func (app *application) LikeThreadHandler(w http.ResponseWriter, r *http.Request
 	// Check given threadID present in db
 	err = app.store.Threads.ValidateThreadId(r.Context(), *t.Id)
 	if err != nil {
-		http.Error(w, "thread id not valid", http.StatusInternalServerError)
+		utils.SendError(w, "thread id not valid", http.StatusInternalServerError)
 		return
 	}
 
 	// Check if user has permission to like this thread.
 	isCreator, err := app.store.Threads.IsThreadOwner(r.Context(), userId, *t.Id)
 	if err != nil {
-		http.Error(w, "error fetching thread for creator", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread for creator", http.StatusInternalServerError)
 		return
 	}
 	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
 	if err != nil {
-		http.Error(w, "error fetching if user admin", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching if user admin", http.StatusInternalServerError)
 		return
 	}
 	isPublic, err := app.store.Threads.IsThreadPublic(r.Context(), *t.Id)
 	if err != nil {
-		http.Error(w, "error fetching thread data", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread data", http.StatusInternalServerError)
 		return
 	}
 	fmt.Println(isPublic)
 	if !(isPublic || isAdmin || isCreator) {
-		http.Error(w, "Permisson Denied", http.StatusForbidden)
+		utils.SendError(w, "Permisson Denied", http.StatusForbidden)
 		return
 	}
 
@@ -391,7 +391,7 @@ func (app *application) WatchThreadHandler(w http.ResponseWriter, r *http.Reques
 
 	if err := json.NewDecoder(r.Body).Decode(&t); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -408,29 +408,29 @@ func (app *application) WatchThreadHandler(w http.ResponseWriter, r *http.Reques
 	// Check given threadID present in db
 	err = app.store.Threads.ValidateThreadId(r.Context(), *t.Id)
 	if err != nil {
-		http.Error(w, "thread id not valid", http.StatusInternalServerError)
+		utils.SendError(w, "thread id not valid", http.StatusInternalServerError)
 		return
 	}
 
 	// Check if user has permission to like this thread.
 	isCreator, err := app.store.Threads.IsThreadOwner(r.Context(), userId, *t.Id)
 	if err != nil {
-		http.Error(w, "error fetching thread for creator", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread for creator", http.StatusInternalServerError)
 		return
 	}
 	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
 	if err != nil {
-		http.Error(w, "error fetching if user admin", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching if user admin", http.StatusInternalServerError)
 		return
 	}
 	isPublic, err := app.store.Threads.IsThreadPublic(r.Context(), *t.Id)
 	if err != nil {
-		http.Error(w, "error fetching thread data", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread data", http.StatusInternalServerError)
 		return
 	}
 
 	if !isPublic && !(isAdmin || isCreator) {
-		http.Error(w, "Permisson Denied", http.StatusForbidden)
+		utils.SendError(w, "Permisson Denied", http.StatusForbidden)
 		return
 	}
 

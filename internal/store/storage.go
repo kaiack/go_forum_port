@@ -26,6 +26,7 @@ type Storage struct {
 		UpdateUser(context.Context, *User) error
 		IsUsersEmpty(context.Context) (bool, error)
 		IsUserAdmin(context.Context, int64) (bool, error)
+		UserExists(context.Context, string) (bool, error)
 	}
 	Comments interface {
 		Create(context.Context, *Comment) error

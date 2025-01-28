@@ -35,7 +35,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -46,11 +46,24 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	userExists, err := app.store.Users.UserExists(r.Context(), u.Email)
+	if err != nil {
+		fmt.Println(err)
+		utils.SendError(w, "DB Error", http.StatusInternalServerError)
+		return
+	}
+
+	if userExists {
+		fmt.Println(err)
+		utils.SendError(w, "User Already Exists", http.StatusBadRequest)
+		return
+	}
+
 	// TODO: Check if this is the first user in the db or not.
 	usersEmpty, err := app.store.Users.IsUsersEmpty(r.Context())
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "DB Error", http.StatusInternalServerError)
+		utils.SendError(w, "DB Error", http.StatusInternalServerError)
 		return
 	}
 
@@ -58,7 +71,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "Error hashing password", http.StatusInternalServerError)
+		utils.SendError(w, "Error hashing password", http.StatusInternalServerError)
 		return
 	}
 
@@ -70,7 +83,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 	err = app.store.Users.Create(r.Context(), &newUser)
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "error creating new User", http.StatusInternalServerError)
+		utils.SendError(w, "error creating new User", http.StatusInternalServerError)
 		return
 	}
 
@@ -78,7 +91,7 @@ func (app *application) registerHandler(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "error creating token", http.StatusInternalServerError)
+		utils.SendError(w, "error creating token", http.StatusInternalServerError)
 		return
 	}
 
@@ -99,7 +112,7 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -112,14 +125,15 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 	fetchedUser, err := app.store.Users.GetUserByEmail(r.Context(), u.Email)
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "User doesn't exist", http.StatusBadRequest)
+		utils.SendError(w, "User doesn't exist", http.StatusBadRequest)
+		// utils.SendError(w, "User doesn't exist", http.StatusBadRequest)
 		return
 	}
 
 	err = utils.CheckPassword(u.Password, fetchedUser.Password)
 
 	if err != nil {
-		http.Error(w, "Incorrect Password", http.StatusUnauthorized)
+		utils.SendError(w, "Incorrect Password", http.StatusUnauthorized)
 		return
 	}
 
@@ -127,7 +141,7 @@ func (app *application) loginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "error creating token", http.StatusInternalServerError)
+		utils.SendError(w, "error creating token", http.StatusInternalServerError)
 		return
 	}
 

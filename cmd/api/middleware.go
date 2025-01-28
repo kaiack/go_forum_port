@@ -20,7 +20,7 @@ func GetAuthMiddleWareFunc(tokenMaker *utils.JWTMaker) func(http.Handler) http.H
 			// Verify the token
 			claims, err := verifyClaimsFromAuthHeader(r, tokenMaker)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("error verifying token %v", err), http.StatusUnauthorized)
+				utils.SendError(w, fmt.Sprintf("error verifying token %v", err), http.StatusUnauthorized)
 				return
 			}
 			// pass the payload/claims down the context
@@ -37,18 +37,18 @@ func GetAdminMiddleWareFunc(tokenMaker *utils.JWTMaker, storage *store.Storage) 
 			// Verify the token
 			claims, err := verifyClaimsFromAuthHeader(r, tokenMaker)
 			if err != nil {
-				http.Error(w, fmt.Sprintf("error verifying token %v", err), http.StatusUnauthorized)
+				utils.SendError(w, fmt.Sprintf("error verifying token %v", err), http.StatusUnauthorized)
 				return
 			}
 
 			isAdmin, err := storage.Users.IsUserAdmin(r.Context(), claims.Id)
 
 			if err != nil {
-				http.Error(w, fmt.Sprintf("user not found??, big error call someone %v", err), http.StatusInternalServerError)
+				utils.SendError(w, fmt.Sprintf("user not found??, big error call someone %v", err), http.StatusInternalServerError)
 			}
 
 			if !isAdmin {
-				http.Error(w, "user is not admin", http.StatusUnauthorized)
+				utils.SendError(w, "user is not admin", http.StatusUnauthorized)
 				return
 			}
 

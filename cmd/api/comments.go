@@ -45,7 +45,7 @@ func (app *application) GetCommentsHandler(w http.ResponseWriter, r *http.Reques
 
 	// if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 	// 	fmt.Println(err)
-	// 	http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// 	utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 	// 	return
 	// }
 
@@ -71,27 +71,27 @@ func (app *application) GetCommentsHandler(w http.ResponseWriter, r *http.Reques
 	// Get the 'term' query parameter (required)
 	theadIdString := query.Get("threadId")
 	if theadIdString == "" {
-		http.Error(w, "Missing required 'threadId' query parameter", http.StatusBadRequest)
+		utils.SendError(w, "Missing required 'threadId' query parameter", http.StatusBadRequest)
 		return
 	}
 
 	threadId, err := strconv.ParseInt(theadIdString, 10, 64)
 
 	if err != nil || threadId < 0 {
-		http.Error(w, "Invalid threadId ID", http.StatusBadRequest)
+		utils.SendError(w, "Invalid threadId ID", http.StatusBadRequest)
 		return
 	}
 
 	err = app.store.Threads.ValidateThreadId(r.Context(), threadId)
 	if err != nil {
-		http.Error(w, "thread id not valid", http.StatusInternalServerError)
+		utils.SendError(w, "thread id not valid", http.StatusInternalServerError)
 		return
 	}
 
 	comments, err := app.store.Comments.GetComments(r.Context(), threadId)
 
 	if err != nil {
-		http.Error(w, fmt.Sprintf("Error fetching threads: %s", err), http.StatusInternalServerError)
+		utils.SendError(w, fmt.Sprintf("Error fetching threads: %s", err), http.StatusInternalServerError)
 		return
 	}
 
@@ -111,7 +111,7 @@ func (app *application) MakeCommentHandler(w http.ResponseWriter, r *http.Reques
 
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -126,13 +126,13 @@ func (app *application) MakeCommentHandler(w http.ResponseWriter, r *http.Reques
 
 	err = app.store.Threads.ValidateThreadId(r.Context(), *c.ThreadId)
 	if err != nil {
-		http.Error(w, "thread id not valid", http.StatusInternalServerError)
+		utils.SendError(w, "thread id not valid", http.StatusInternalServerError)
 		return
 	}
 
 	err = app.store.Comments.CheckCommentValid(r.Context(), c.ParentCommentId, true)
 	if err != nil {
-		http.Error(w, "comment id not valid", http.StatusInternalServerError)
+		utils.SendError(w, "comment id not valid", http.StatusInternalServerError)
 		return
 	}
 
@@ -145,7 +145,7 @@ func (app *application) MakeCommentHandler(w http.ResponseWriter, r *http.Reques
 	err = app.store.Comments.Create(r.Context(), &newComment)
 
 	if err != nil {
-		http.Error(w, "Error creating comment", http.StatusInternalServerError)
+		utils.SendError(w, "Error creating comment", http.StatusInternalServerError)
 		return
 	}
 
@@ -163,7 +163,7 @@ func (app *application) EditCommentHandler(w http.ResponseWriter, r *http.Reques
 
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -178,25 +178,25 @@ func (app *application) EditCommentHandler(w http.ResponseWriter, r *http.Reques
 
 	err = app.store.Comments.CheckCommentValid(r.Context(), c.Id, true)
 	if err != nil {
-		http.Error(w, "comment id not valid", http.StatusBadRequest)
+		utils.SendError(w, "comment id not valid", http.StatusBadRequest)
 		return
 	}
 
 	// Check user is creator of comment or admin to be allowed to change it.
 	isCreator, err := app.store.Comments.CheckCommentCreator(r.Context(), *c.Id, userId)
 	if err != nil {
-		http.Error(w, "error fetching if comment creator is user", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching if comment creator is user", http.StatusInternalServerError)
 		return
 	}
 
 	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
 	if err != nil {
-		http.Error(w, "error fetching if user admin", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching if user admin", http.StatusInternalServerError)
 		return
 	}
 
 	if !(isCreator || isAdmin) {
-		http.Error(w, "Permisson Denied", http.StatusForbidden)
+		utils.SendError(w, "Permisson Denied", http.StatusForbidden)
 		return
 	}
 
@@ -211,7 +211,7 @@ func (app *application) DeleteCommentHandler(w http.ResponseWriter, r *http.Requ
 
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -226,25 +226,25 @@ func (app *application) DeleteCommentHandler(w http.ResponseWriter, r *http.Requ
 
 	err = app.store.Comments.CheckCommentValid(r.Context(), c.Id, true)
 	if err != nil {
-		http.Error(w, "comment id not valid", http.StatusBadRequest)
+		utils.SendError(w, "comment id not valid", http.StatusBadRequest)
 		return
 	}
 
 	// Check user is creator of comment or admin to be allowed to change it.
 	isCreator, err := app.store.Comments.CheckCommentCreator(r.Context(), *c.Id, userId)
 	if err != nil {
-		http.Error(w, "error fetching if comment creator is user", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching if comment creator is user", http.StatusInternalServerError)
 		return
 	}
 
 	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
 	if err != nil {
-		http.Error(w, "error fetching if user admin", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching if user admin", http.StatusInternalServerError)
 		return
 	}
 
 	if !(isCreator || isAdmin) {
-		http.Error(w, "Permisson Denied", http.StatusForbidden)
+		utils.SendError(w, "Permisson Denied", http.StatusForbidden)
 		return
 	}
 
@@ -260,7 +260,7 @@ func (app *application) LikeCommentHandler(w http.ResponseWriter, r *http.Reques
 
 	if err := json.NewDecoder(r.Body).Decode(&c); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -275,34 +275,34 @@ func (app *application) LikeCommentHandler(w http.ResponseWriter, r *http.Reques
 
 	err = app.store.Comments.CheckCommentValid(r.Context(), c.Id, true)
 	if err != nil {
-		http.Error(w, "comment id not valid", http.StatusBadRequest)
+		utils.SendError(w, "comment id not valid", http.StatusBadRequest)
 		return
 	}
 
 	threadId, err := app.store.Comments.GetThreadFromComment(r.Context(), *c.Id)
 	if err != nil {
-		http.Error(w, "error fetching thread for comment", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread for comment", http.StatusInternalServerError)
 		return
 	}
 	// Check if user has permission to like this thread.
 	isCreator, err := app.store.Threads.IsThreadOwner(r.Context(), userId, threadId)
 	if err != nil {
-		http.Error(w, "error fetching thread for creator", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread for creator", http.StatusInternalServerError)
 		return
 	}
 	isAdmin, err := app.store.Users.IsUserAdmin(r.Context(), userId)
 	if err != nil {
-		http.Error(w, "error fetching if user admin", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching if user admin", http.StatusInternalServerError)
 		return
 	}
 	isPublic, err := app.store.Threads.IsThreadPublic(r.Context(), threadId)
 	if err != nil {
-		http.Error(w, "error fetching thread data", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching thread data", http.StatusInternalServerError)
 		return
 	}
 	// fmt.Println(isPublic)
 	if !(isPublic || isAdmin || isCreator) {
-		http.Error(w, "Permisson Denied", http.StatusForbidden)
+		utils.SendError(w, "Permisson Denied", http.StatusForbidden)
 		return
 	}
 

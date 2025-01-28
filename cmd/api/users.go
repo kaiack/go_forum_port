@@ -41,7 +41,7 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -55,7 +55,7 @@ func (app *application) updateUserHandler(w http.ResponseWriter, r *http.Request
 
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "error updating user", http.StatusInternalServerError)
+		utils.SendError(w, "error updating user", http.StatusInternalServerError)
 		return
 	}
 
@@ -69,7 +69,7 @@ func (app *application) updateUserAdmin(w http.ResponseWriter, r *http.Request) 
 
 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 		fmt.Println(err)
-		http.Error(w, "Request body invalid", http.StatusBadRequest)
+		utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 		return
 	}
 
@@ -85,7 +85,7 @@ func (app *application) updateUserAdmin(w http.ResponseWriter, r *http.Request) 
 
 	if err != nil {
 		fmt.Println(err)
-		http.Error(w, "error updating user", http.StatusInternalServerError)
+		utils.SendError(w, "error updating user", http.StatusInternalServerError)
 		return
 	}
 
@@ -99,7 +99,7 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 
 	// if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 	// 	fmt.Println(err)
-	// 	http.Error(w, "Request body invalid", http.StatusBadRequest)
+	// 	utils.SendError(w, "Request body invalid", http.StatusBadRequest)
 	// 	return
 	// }
 
@@ -114,21 +114,21 @@ func (app *application) getUserHandler(w http.ResponseWriter, r *http.Request) {
 	// Get the 'term' query parameter (required)
 	userIdString := query.Get("userId")
 	if userIdString == "" {
-		http.Error(w, "Missing required 'userId' query parameter", http.StatusBadRequest)
+		utils.SendError(w, "Missing required 'userId' query parameter", http.StatusBadRequest)
 		return
 	}
 
 	userId, err := strconv.ParseInt(userIdString, 10, 64)
 
 	if err != nil || userId < 1 {
-		http.Error(w, "Invalid User ID", http.StatusBadRequest)
+		utils.SendError(w, "Invalid User ID", http.StatusBadRequest)
 		return
 	}
 
 	userInfo, err := app.store.Users.GetUserById(r.Context(), userId)
 
 	if err != nil {
-		http.Error(w, "error fetching user", http.StatusInternalServerError)
+		utils.SendError(w, "error fetching user", http.StatusInternalServerError)
 		return
 	}
 
