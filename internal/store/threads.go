@@ -55,7 +55,7 @@ func (s *ThreadsStore) GetThread(ctx context.Context, id int64) (*Thread, error)
 	// -------------------------------------------------------------------------------------------------------
 
 	// To get likes, invert this for comments...
-	query = `SELECT user_id FROM likes WHERE thread_id = ? AND comment_id IS NULL`
+	query = `SELECT user_id FROM likes WHERE thread_id = ? AND comment_id IS -1`
 
 	likesRows, err := s.db.QueryContext(ctx, query, id)
 	if err != nil {
@@ -180,16 +180,28 @@ func (s *ThreadsStore) DeleteThread(ctx context.Context, threadId int64) error {
 	return err
 }
 
-func (s *ThreadsStore) LikeThread(ctx context.Context, threadId int64, userId int64) error {
-	query := "INSERT INTO likes (user_id, thread_id) VALUES (?, ?)"
-	_, err := s.db.ExecContext(ctx, query, userId, threadId)
-	return err
+func (s *ThreadsStore) LikeThread(ctx context.Context, threadId int64, userId int64, turnOn bool) error {
+	if turnOn {
+		query := "INSERT INTO likes (user_id, thread_id, comment_id) VALUES (?, ?, ?)"
+		_, err := s.db.ExecContext(ctx, query, userId, threadId, -1)
+		return err
+	} else {
+		query := "DELETE FROM likes WHERE user_id = ? AND thread_id = ?"
+		_, err := s.db.ExecContext(ctx, query, userId, threadId)
+		return err
+	}
 }
 
-func (s *ThreadsStore) WatchThread(ctx context.Context, threadId int64, userId int64) error {
-	query := "INSERT INTO watching (userId, threadId) VALUES (?, ?)"
-	_, err := s.db.ExecContext(ctx, query, userId, threadId)
-	return err
+func (s *ThreadsStore) WatchThread(ctx context.Context, threadId int64, userId int64, turnOn bool) error {
+	if turnOn {
+		query := "INSERT INTO watching (userId, threadId) VALUES (?, ?)"
+		_, err := s.db.ExecContext(ctx, query, userId, threadId)
+		return err
+	} else {
+		query := "DELETE FROM watching WHERE user_id = ? AND thread_id = ?"
+		_, err := s.db.ExecContext(ctx, query, userId, threadId)
+		return err
+	}
 }
 
 func (s *ThreadsStore) ValidateThreadId(ctx context.Context, id int64) error {

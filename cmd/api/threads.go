@@ -26,6 +26,7 @@ type GetThreadReq struct {
 
 type GetThreadRes = store.Thread
 
+// This isnt used cause start comes as a query parameter? I think
 type GetThreadsReq struct {
 	Start int64 `json:"count" validate:"required"`
 }
@@ -379,7 +380,7 @@ func (app *application) LikeThreadHandler(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	app.store.Threads.LikeThread(r.Context(), *t.Id, userId)
+	app.store.Threads.LikeThread(r.Context(), *t.Id, userId, *t.TurnOn)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
@@ -434,7 +435,7 @@ func (app *application) WatchThreadHandler(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	app.store.Threads.WatchThread(r.Context(), *t.Id, userId)
+	app.store.Threads.WatchThread(r.Context(), *t.Id, userId, *t.TurnOn)
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)

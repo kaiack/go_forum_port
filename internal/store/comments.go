@@ -55,8 +55,8 @@ func (s *CommentsStore) DeleteComment(ctx context.Context, commentId int64) erro
 
 func (s *CommentsStore) LikeComment(ctx context.Context, commentId int64, userId int64, turnOn bool) error {
 	if turnOn {
-		query := "INSERT INTO likes (user_id, comment_id) VALUES (?, ?)"
-		_, err := s.db.ExecContext(ctx, query, userId, commentId)
+		query := "INSERT INTO likes (user_id, comment_id, thread_id) VALUES (?, ?, ?)"
+		_, err := s.db.ExecContext(ctx, query, userId, commentId, -1)
 		return err
 	} else {
 		query := "DELETE FROM likes WHERE user_id = ? AND comment_id = ?"
@@ -89,7 +89,7 @@ func (s *CommentsStore) GetComments(ctx context.Context, threadId int64) ([]Comm
 		comment.Likes = make([]int64, 0)
 
 		// Fetch likes for the current comment
-		likesQuery := `SELECT user_id FROM likes WHERE comment_id = ? AND thread_id IS NULL`
+		likesQuery := `SELECT user_id FROM likes WHERE comment_id = ? AND thread_id IS -1`
 		likesRows, err := s.db.Query(likesQuery, comment.ID)
 		if err != nil {
 			return nil, fmt.Errorf("failed to fetch likes for comment %d: %w", comment.ID, err)
